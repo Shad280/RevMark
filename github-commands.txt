@@ -1,0 +1,8 @@
+# Commands to run after creating GitHub repository
+# Replace 'yourusername' with your actual GitHub username
+
+git remote add origin https://github.com/yourusername/RevMark.git
+git push -u origin main
+
+# After successful push, your code will be on GitHub!
+# Then you can connect it to Railway for deployment.
