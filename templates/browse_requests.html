@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Browse Requests - RevMark{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">All Requests</h2>
+                <p>Find your next opportunity</p>
+            </div>
+            
+            {% if requests.items %}
+                {% for request in requests.items %}
+                <div class="request-card">
+                    <div class="request-title">
+                        <a href="{{ url_for('main.view_request', request_id=request.id) }}">
+                            {{ request.title }}
+                        </a>
+                    </div>
+                    <div class="request-meta">
+                        Posted by {{ request.buyer.username }} • {{ request.timestamp.strftime('%Y-%m-%d %H:%M') }}
+                        {% if request.budget %}
+                            • Budget: <span class="request-budget">${{ "%.2f"|format(request.budget) }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="request-description">
+                        {{ request.description[:200] }}{% if request.description|length > 200 %}...{% endif %}
+                    </div>
+                    <div class="mt-2">
+                        {% if current_user.is_authenticated and current_user.id != request.buyer_id %}
+                            <a href="{{ url_for('main.contact_user', user_id=request.buyer_id) }}" class="btn btn-primary">Contact</a>
+                        {% endif %}
+                        <a href="{{ url_for('main.view_request', request_id=request.id) }}" class="btn btn-outline">View Details</a>
+                    </div>
+                </div>
+                {% endfor %}
+                
+                <!-- Pagination -->
+                {% if requests.pages > 1 %}
+                <div class="text-center mt-3">
+                    {% if requests.has_prev %}
+                        <a href="{{ url_for('main.browse_requests', page=requests.prev_num) }}" class="btn btn-outline">← Previous</a>
+                    {% endif %}
+                    
+                    <span class="mx-3">
+                        Page {{ requests.page }} of {{ requests.pages }}
+                    </span>
+                    
+                    {% if requests.has_next %}
+                        <a href="{{ url_for('main.browse_requests', page=requests.next_num) }}" class="btn btn-outline">Next →</a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            {% else %}
+                <div class="text-center p-3">
+                    <h3>No requests found</h3>
+                    <p>Be the first to post a request!</p>
+                    {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('main.post_request') }}" class="btn btn-primary">Post Your Request</a>
+                    {% else %}
+                        <a href="{{ url_for('main.signup') }}" class="btn btn-primary">Sign Up to Post</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

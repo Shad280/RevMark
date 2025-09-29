@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RevMark</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='img/favicon-16.png') }}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/favicon-32.png') }}">
+</head>
+<body>
+  <nav class="navbar">
+    <a href="{{ url_for('main.index') }}" class="logo-container">
+      <img src="{{ url_for('static', filename='img/logo.png') }}" alt="RM" class="logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+      <span class="logo-css-only" style="display: none;">RM</span>
+      <span class="logo-text">RevMark</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="{{ url_for('main.index') }}">Home</a></li>
+      <li><a href="{{ url_for('main.about') }}">About</a></li>
+      {% if current_user.is_authenticated %}
+        <li>
+          <a href="{{ url_for('main.inbox') }}" class="inbox-link">
+            Inbox
+            {% if current_user.unread_message_count() > 0 %}
+              <span class="notification-badge">{{ current_user.unread_message_count() }}</span>
+            {% endif %}
+          </a>
+        </li>
+        <li><a href="{{ url_for('main.account') }}">My Account</a></li>
+        <li><a href="{{ url_for('main.logout') }}">Logout</a></li>
+      {% else %}
+        <li><a href="{{ url_for('main.signup') }}">Sign Up</a></li>
+        <li><a href="{{ url_for('main.login') }}">Login</a></li>
+      {% endif %}
+    </ul>
+  </nav>
+
+  <main class="content">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, msg in messages %}
+          <div class="alert {{ category }}">{{ msg }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-content">
+      <div class="footer-slogan">
+        <h2>Buy Smarter. Sell Faster.</h2>
+      </div>
+      
+      <div class="footer-contact">
+        <h3>Contact</h3>
+        <p>Email: <a href="mailto:support@revmark.com">support@revmark.com</a></p>
+        <p>Phone: +1 234 567 8900</p>
+      </div>
+
+      <div class="footer-social">
+        <a href="#" title="LinkedIn"><i class="fab fa-linkedin"></i></a>
+        <a href="#" title="Twitter"><i class="fab fa-twitter"></i></a>
+        <a href="#" title="Instagram"><i class="fab fa-instagram"></i></a>
+        <a href="#" title="Facebook"><i class="fab fa-facebook"></i></a>
+      </div>
+
+      <div class="footer-copyright">
+        © 2025 RevMark. All rights reserved.
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

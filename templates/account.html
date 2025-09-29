@@ -1,0 +1,517 @@
+{% extends "base.html" %}
+
+{% block title %}My Account - RevMark{% endblock %}
+
+{% block content %}
+<div class="account-container">
+  <div class="account-header">
+    <h1>My Account</h1>
+    <p>Manage your profile, posts, and account settings</p>
+  </div>
+  
+  <div class="account-tabs">
+    <button class="tab-button active" onclick="showTab('profile')">
+      <i class="fas fa-user"></i> Profile
+    </button>
+    <button class="tab-button" onclick="showTab('posts')">
+      <i class="fas fa-file-alt"></i> My Posts ({{ requests|length }})
+    </button>
+    <button class="tab-button" onclick="showTab('settings')">
+      <i class="fas fa-cog"></i> Settings
+    </button>
+  </div>
+
+  <!-- Profile Tab -->
+  <div id="profile" class="tab-content active">
+    <div class="profile-section">
+      <div class="profile-card">
+        <div class="profile-avatar">
+          <i class="fas fa-user-circle"></i>
+        </div>
+        <div class="profile-info">
+          <h2>{{ current_user.username }}</h2>
+          <p class="email">{{ current_user.email }}</p>
+          <div class="profile-stats">
+            <div class="stat">
+              <span class="stat-number">{{ requests|length }}</span>
+              <span class="stat-label">Posts</span>
+            </div>
+            <div class="stat">
+              <span class="stat-number">{{ current_user.messages_received|length }}</span>
+              <span class="stat-label">Messages Received</span>
+            </div>
+            <div class="stat">
+              <span class="stat-number">{{ current_user.messages_sent|length }}</span>
+              <span class="stat-label">Messages Sent</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Posts Tab -->
+  <div id="posts" class="tab-content">
+    <div class="posts-section">
+      <div class="posts-header">
+        <h2>My Posts</h2>
+        <a href="{{ url_for('main.post_request') }}" class="btn btn-primary">
+          <i class="fas fa-plus"></i> New Post
+        </a>
+      </div>
+      
+      <div class="posts-grid">
+        {% for request in requests %}
+          <div class="post-card">
+            <div class="post-header">
+              <h3 class="post-title">
+                <a href="{{ url_for('main.view_request', request_id=request.id) }}">{{ request.title }}</a>
+              </h3>
+              <div class="post-actions">
+                <button class="btn btn-danger btn-sm delete-btn" 
+                        data-request-id="{{ request.id }}" 
+                        data-request-title="{{ request.title }}">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </div>
+            
+            <p class="post-description">
+              {{ request.description[:120] }}{% if request.description|length > 120 %}...{% endif %}
+            </p>
+            
+            <div class="post-meta">
+              <span class="post-date">
+                <i class="fas fa-calendar"></i>
+                {{ request.timestamp.strftime('%B %d, %Y') }}
+              </span>
+              {% if request.budget %}
+                <span class="post-budget">
+                  <i class="fas fa-dollar-sign"></i>
+                  ${{ "%.2f"|format(request.budget) }}
+                </span>
+              {% endif %}
+            </div>
+          </div>
+        {% else %}
+          <div class="empty-state">
+            <i class="fas fa-file-alt"></i>
+            <h3>No posts yet</h3>
+            <p>You haven't posted any requests yet. Create your first post to get started!</p>
+            <a href="{{ url_for('main.post_request') }}" class="btn btn-primary">Post Your First Request</a>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Tab -->
+  <div id="settings" class="tab-content">
+    <div class="settings-section">
+      <h2>Account Settings</h2>
+      
+      <div class="settings-group">
+        <h3>Account Information</h3>
+        <div class="setting-item">
+          <label>Username</label>
+          <div class="setting-value">{{ current_user.username }}</div>
+        </div>
+        <div class="setting-item">
+          <label>Email</label>
+          <div class="setting-value">{{ current_user.email }}</div>
+        </div>
+        <button class="btn btn-outline">Edit Profile</button>
+      </div>
+
+      <div class="settings-group">
+        <h3>Preferences</h3>
+        <div class="setting-item">
+          <label>Email Notifications</label>
+          <div class="setting-toggle">
+            <input type="checkbox" id="emailNotifications" checked>
+            <label for="emailNotifications" class="toggle-label"></label>
+          </div>
+        </div>
+        <div class="setting-item">
+          <label>Message Notifications</label>
+          <div class="setting-toggle">
+            <input type="checkbox" id="messageNotifications" checked>
+            <label for="messageNotifications" class="toggle-label"></label>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-group danger-zone">
+        <h3>Danger Zone</h3>
+        <div class="setting-item">
+          <label>Delete Account</label>
+          <p class="setting-description">Permanently delete your account and all associated data.</p>
+          <button class="btn btn-danger">Delete Account</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete confirmation modal -->
+<div id="deleteModal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <h3>Delete Post</h3>
+    <p>Are you sure you want to delete "<span id="postTitle"></span>"?</p>
+    <p class="text-danger">This action cannot be undone.</p>
+    <div class="modal-actions">
+      <button onclick="closeDeleteModal()" class="btn btn-outline">Cancel</button>
+      <form id="deleteForm" method="POST" style="display: inline;">
+        <button type="submit" class="btn btn-danger">Delete Post</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+.account-container {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 2rem;
+}
+
+.account-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.account-header h1 {
+  margin-bottom: 0.5rem;
+}
+
+.account-header p {
+  color: #666;
+}
+
+.account-tabs {
+  display: flex;
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 4px;
+  margin-bottom: 2rem;
+}
+
+.tab-button {
+  flex: 1;
+  padding: 1rem;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 500;
+}
+
+.tab-button:hover {
+  background: rgba(45, 143, 63, 0.1);
+}
+
+.tab-button.active {
+  background: white;
+  color: #2d8f3f;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+/* Profile Tab */
+.profile-card {
+  background: white;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  padding: 2rem;
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+.profile-avatar {
+  font-size: 5rem;
+  color: #2d8f3f;
+}
+
+.profile-info h2 {
+  margin-bottom: 0.5rem;
+}
+
+.email {
+  color: #666;
+  margin-bottom: 1rem;
+}
+
+.profile-stats {
+  display: flex;
+  gap: 2rem;
+}
+
+.stat {
+  text-align: center;
+}
+
+.stat-number {
+  display: block;
+  font-size: 2rem;
+  font-weight: bold;
+  color: #2d8f3f;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+/* Posts Tab */
+.posts-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.posts-grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.post-card {
+  background: white;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: box-shadow 0.2s;
+}
+
+.post-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.post-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.post-title {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.post-title a {
+  text-decoration: none;
+  color: #333;
+}
+
+.post-title a:hover {
+  color: #2d8f3f;
+}
+
+.post-description {
+  color: #666;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+
+.post-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.9rem;
+  color: #888;
+}
+
+.post-budget {
+  color: #2d8f3f;
+  font-weight: 600;
+}
+
+/* Settings Tab */
+.settings-group {
+  background: white;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.settings-group h3 {
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.setting-item:last-child {
+  border-bottom: none;
+}
+
+.setting-value {
+  color: #666;
+}
+
+.setting-description {
+  color: #888;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.setting-toggle {
+  position: relative;
+}
+
+.setting-toggle input[type="checkbox"] {
+  display: none;
+}
+
+.toggle-label {
+  width: 50px;
+  height: 25px;
+  background: #ddd;
+  border-radius: 25px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.toggle-label:after {
+  content: '';
+  position: absolute;
+  width: 21px;
+  height: 21px;
+  background: white;
+  border-radius: 50%;
+  top: 2px;
+  left: 2px;
+  transition: left 0.3s;
+}
+
+.setting-toggle input:checked + .toggle-label {
+  background: #2d8f3f;
+}
+
+.setting-toggle input:checked + .toggle-label:after {
+  left: 27px;
+}
+
+.danger-zone {
+  border-color: #dc3545;
+  background: #fff5f5;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #666;
+}
+
+.empty-state i {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  color: #ddd;
+}
+
+.btn-sm {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+/* Modal styles */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  max-width: 400px;
+  width: 90%;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.text-danger {
+  color: #dc3545;
+  font-size: 0.9rem;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Add event listeners to delete buttons
+  document.querySelectorAll('.delete-btn').forEach(function(button) {
+    button.addEventListener('click', function() {
+      const requestId = this.dataset.requestId;
+      const title = this.dataset.requestTitle;
+      confirmDelete(requestId, title);
+    });
+  });
+  
+  // Close modal when clicking outside
+  document.getElementById('deleteModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+      closeDeleteModal();
+    }
+  });
+});
+
+function showTab(tabName) {
+  // Hide all tab contents
+  document.querySelectorAll('.tab-content').forEach(function(content) {
+    content.classList.remove('active');
+  });
+  
+  // Remove active class from all tab buttons
+  document.querySelectorAll('.tab-button').forEach(function(button) {
+    button.classList.remove('active');
+  });
+  
+  // Show selected tab
+  document.getElementById(tabName).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function confirmDelete(requestId, title) {
+  document.getElementById('postTitle').textContent = title;
+  document.getElementById('deleteForm').action = `/delete_request/${requestId}`;
+  document.getElementById('deleteModal').style.display = 'flex';
+}
+
+function closeDeleteModal() {
+  document.getElementById('deleteModal').style.display = 'none';
+}
+</script>
+{% endblock %}

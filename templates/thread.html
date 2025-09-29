@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="dashboard">
+  <div class="dashboard-header">
+    <h1>Chat with {{ receiver.username }}</h1>
+    <a href="{{ url_for('main.inbox') }}" class="btn btn-outline">← Back to Inbox</a>
+  </div>
+  
+  <div class="chat-container" style="background: white; border-radius: 8px; padding: 2rem; margin-bottom: 2rem;">
+    <div class="messages-thread" style="max-height: 400px; overflow-y: auto; margin-bottom: 2rem;">
+      {% for m in thread %}
+        <div class="message-item" style="margin-bottom: 1rem; padding: 1rem; border-radius: 6px; {% if m.sender.id == current_user.id %}background: #2d8f3f; color: white; margin-left: 2rem; text-align: right;{% else %}background: #f8f9fa; margin-right: 2rem;{% endif %}">
+          <div><strong>{{ m.sender.username }}:</strong> {{ m.body }}</div>
+          <small style="opacity: 0.7;">{{ m.timestamp.strftime('%m/%d %H:%M') }}</small>
+        </div>
+      {% else %}
+        <p style="text-align: center; color: #666;">No messages yet. Start the conversation!</p>
+      {% endfor %}
+    </div>
+    
+    <form method="POST" style="max-width: none; margin: 0; padding: 0; box-shadow: none;">
+      <textarea name="body" placeholder="Type your message..." required rows="3" style="margin-bottom: 1rem;"></textarea>
+      <button type="submit" class="btn btn-primary">Send Message</button>
+    </form>
+  </div>
+</div>
+
+<script>
+// Auto-scroll to bottom of messages
+document.addEventListener('DOMContentLoaded', function() {
+  var messageThread = document.querySelector('.messages-thread');
+  if (messageThread) {
+    messageThread.scrollTop = messageThread.scrollHeight;
+  }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,19 @@
+<!-- This is a placeholder for the logo file. In a real project, you would create an actual PNG image file. -->
+<!-- For now, I'll create an SVG-based logo that can be converted to PNG -->
+
+<!-- RevMark Logo Concept: 
+- Green background circle
+- White "R" and "M" letters positioned so their negative space forms a "V"
+- Clean, professional design
+-->
+
+<svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <!-- Green background circle -->
+  <circle cx="60" cy="60" r="60" fill="#2d8f3f"/>
+  
+  <!-- White "R" letter -->
+  <path d="M25 25 L25 95 L40 95 L40 65 L50 65 L65 95 L80 95 L62 60 Q70 55 70 45 Q70 35 62 30 Q54 25 45 25 Z M40 40 L45 40 Q50 40 52.5 42.5 Q55 45 55 50 Q55 55 52.5 57.5 Q50 60 45 60 L40 60 Z" fill="white"/>
+  
+  <!-- White "M" letter positioned to create "V" negative space -->
+  <path d="M75 25 L75 95 L88 95 L88 50 L95 70 L100 70 L107 50 L107 95 L120 95 L120 25 L105 25 L97.5 55 L90 25 Z" fill="white"/>
+</svg>

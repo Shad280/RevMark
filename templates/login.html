@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<form method="POST">
+  <h2>Login to RevMark</h2>
+  <input type="email" name="email" placeholder="Email" required>
+  <input type="password" name="password" placeholder="Password" required>
+  <button type="submit" class="btn btn-primary">Login</button>
+  <p style="text-align: center; margin-top: 1rem;">
+    Don't have an account? <a href="{{ url_for('main.signup') }}" style="color: #2d8f3f;">Sign up here</a>
+  </p>
+</form>
+{% endblock %}

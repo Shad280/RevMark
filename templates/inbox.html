@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="dashboard">
+  <div class="dashboard-header">
+    <h1>Your Messages</h1>
+    <a href="{{ url_for('main.index') }}" class="btn btn-outline">← Back to Dashboard</a>
+  </div>
+  
+  <div class="messages-list">
+    {% for msg in messages %}
+      <div class="message-preview">
+        <a href="{{ url_for('main.message', receiver_id=msg.sender.id) }}">
+          <strong>{{ msg.sender.username }}</strong>: {{ msg.body[:60] }}{% if msg.body|length > 60 %}...{% endif %}
+          <small style="float: right; color: #666;">{{ msg.timestamp.strftime('%m/%d %H:%M') }}</small>
+        </a>
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <h3>No messages yet</h3>
+        <p>Your messages will appear here when someone contacts you.</p>
+        <a href="{{ url_for('main.index') }}" class="btn btn-primary">Back to Requests</a>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
