@@ -2,15 +2,21 @@ from revmark import create_app
 import os
 
 # 🔍 DEBUG: Check what Railway is providing
-print("=" * 50)
-print("RAILWAY DEBUG INFO:")
-print("DATABASE_URL from Railway:", os.getenv("DATABASE_URL"))
+print("=" * 60)
+print("🚂 RAILWAY POSTGRESQL DEBUG INFO:")
+print("DATABASE_URL:", os.getenv("DATABASE_URL"))
+print("DATABASE_PUBLIC_URL:", os.getenv("DATABASE_PUBLIC_URL"))
 print("RAILWAY_ENVIRONMENT:", os.getenv("RAILWAY_ENVIRONMENT"))
-print("All DB-related env vars:")
-for key, value in os.environ.items():
-    if any(db_key in key.upper() for db_key in ['DATABASE', 'POSTGRES', 'PG']):
-        print(f"  {key}: {'***' if 'PASSWORD' in key.upper() else value}")
-print("=" * 50)
+print("RAILWAY_PRIVATE_DOMAIN:", os.getenv("RAILWAY_PRIVATE_DOMAIN"))
+print("PGUSER:", os.getenv("PGUSER"))
+print("POSTGRES_USER:", os.getenv("POSTGRES_USER"))
+print("PGHOST:", os.getenv("PGHOST"))
+print("PGPORT:", os.getenv("PGPORT"))
+print("PGDATABASE:", os.getenv("PGDATABASE"))
+print("POSTGRES_DB:", os.getenv("POSTGRES_DB"))
+print("PGPASSWORD:", '***' if os.getenv("PGPASSWORD") else None)
+print("POSTGRES_PASSWORD:", '***' if os.getenv("POSTGRES_PASSWORD") else None)
+print("=" * 60)
 
 app = create_app()
 

@@ -51,6 +51,6 @@ class Config:
         SQLALCHEMY_DATABASE_URI = f"sqlite:///{os.path.join(BASE_DIR, 'instance', 'revmark.db')}"
         print("🏠 Using SQLite for local development")
     
-    # 🚨 Railway Production Check
-    if os.getenv("RAILWAY_ENVIRONMENT") and not DATABASE_URL:
-        raise RuntimeError("❌ Railway PostgreSQL plugin not configured. Add PostgreSQL plugin to your Railway project.")
+    # 🚨 Railway Production Check (temporarily disabled for debugging)
+    # if os.getenv("RAILWAY_ENVIRONMENT") and not DATABASE_URL:
+    #     raise RuntimeError("❌ Railway PostgreSQL plugin not configured. Add PostgreSQL plugin to your Railway project.")
