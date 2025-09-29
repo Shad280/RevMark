@@ -10,10 +10,7 @@ login_manager.login_view = "login"
 
 def create_app():
     app = Flask(__name__, template_folder='../templates', static_folder='../static')
-    
-    # Initialize configuration with debugging
-    config = Config()
-    app.config.from_object(config)
+    app.config.from_object(Config)
 
     # Initialize extensions
     db.init_app(app)
