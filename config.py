@@ -6,6 +6,17 @@ class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY") or "revmark-secret-key"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
+    # Performance optimizations
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_size': 20,
+        'pool_recycle': 3600,
+        'pool_pre_ping': True,
+        'connect_args': {
+            'connect_timeout': 10,
+            'options': '-c statement_timeout=30000'  # 30 second query timeout
+        }
+    }
+    
     # 🔍 Railway PostgreSQL Detection with Manual Construction
     DATABASE_URL = os.getenv("DATABASE_URL")
     

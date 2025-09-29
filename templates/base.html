@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RevMark</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/mobile-enhancements.css') }}">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
   <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='img/favicon-16.png') }}">
@@ -17,23 +18,32 @@
       <span class="logo-css-only" style="display: none;">RM</span>
       <span class="logo-text">RevMark</span>
     </a>
+    
+    <!-- Mobile menu toggle -->
+    <button class="mobile-menu-toggle" type="button" aria-label="Toggle navigation">
+      <span class="hamburger-line"></span>
+      <span class="hamburger-line"></span>
+      <span class="hamburger-line"></span>
+    </button>
+    
     <ul class="nav-links">
       <li><a href="{{ url_for('main.index') }}">Home</a></li>
       <li><a href="{{ url_for('main.about') }}">About</a></li>
       {% if current_user.is_authenticated %}
         <li>
           <a href="{{ url_for('main.inbox') }}" class="inbox-link">
-            Inbox
+            <i class="fas fa-inbox"></i>
+            <span class="nav-text">Inbox</span>
             {% if current_user.unread_message_count() > 0 %}
               <span class="notification-badge">{{ current_user.unread_message_count() }}</span>
             {% endif %}
           </a>
         </li>
-        <li><a href="{{ url_for('main.account') }}">My Account</a></li>
-        <li><a href="{{ url_for('main.logout') }}">Logout</a></li>
+        <li><a href="{{ url_for('main.account') }}"><i class="fas fa-user"></i><span class="nav-text">Account</span></a></li>
+        <li><a href="{{ url_for('main.logout') }}"><i class="fas fa-sign-out-alt"></i><span class="nav-text">Logout</span></a></li>
       {% else %}
-        <li><a href="{{ url_for('main.signup') }}">Sign Up</a></li>
-        <li><a href="{{ url_for('main.login') }}">Login</a></li>
+        <li><a href="{{ url_for('main.signup') }}"><i class="fas fa-user-plus"></i><span class="nav-text">Sign Up</span></a></li>
+        <li><a href="{{ url_for('main.login') }}"><i class="fas fa-sign-in-alt"></i><span class="nav-text">Login</span></a></li>
       {% endif %}
     </ul>
   </nav>
@@ -73,5 +83,84 @@
       </div>
     </div>
   </footer>
+
+  <script>
+    // Mobile menu toggle functionality
+    document.addEventListener('DOMContentLoaded', function() {
+      const mobileToggle = document.querySelector('.mobile-menu-toggle');
+      const navLinks = document.querySelector('.nav-links');
+      
+      if (mobileToggle && navLinks) {
+        mobileToggle.addEventListener('click', function() {
+          navLinks.classList.toggle('active');
+          mobileToggle.classList.toggle('active');
+        });
+        
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', function(e) {
+          if (!e.target.closest('.navbar')) {
+            navLinks.classList.remove('active');
+            mobileToggle.classList.remove('active');
+          }
+        });
+      }
+
+      // Mobile keyboard detection
+      let initialViewportHeight = window.innerHeight;
+      window.addEventListener('resize', function() {
+        const currentViewportHeight = window.innerHeight;
+        if (currentViewportHeight < initialViewportHeight * 0.75) {
+          document.body.classList.add('keyboard-open');
+        } else {
+          document.body.classList.remove('keyboard-open');
+        }
+      });
+
+      // Touch feedback for buttons
+      const buttons = document.querySelectorAll('.btn, button');
+      buttons.forEach(button => {
+        button.addEventListener('touchstart', function() {
+          this.style.transform = 'scale(0.95)';
+        });
+        
+        button.addEventListener('touchend', function() {
+          this.style.transform = 'scale(1)';
+        });
+      });
+
+      // Loading states for form submissions
+      const forms = document.querySelectorAll('form');
+      forms.forEach(form => {
+        form.addEventListener('submit', function() {
+          const submitButton = form.querySelector('input[type="submit"], button[type="submit"]');
+          if (submitButton) {
+            submitButton.classList.add('loading');
+            submitButton.disabled = true;
+          }
+        });
+      });
+
+      // Enhanced scroll behavior for mobile
+      let ticking = false;
+      function updateScrollClasses() {
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        
+        if (scrollTop > 100) {
+          document.body.classList.add('scrolled');
+        } else {
+          document.body.classList.remove('scrolled');
+        }
+        
+        ticking = false;
+      }
+
+      window.addEventListener('scroll', function() {
+        if (!ticking) {
+          requestAnimationFrame(updateScrollClasses);
+          ticking = true;
+        }
+      });
+    });
+  </script>
 </body>
 </html>

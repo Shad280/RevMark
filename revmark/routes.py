@@ -1,13 +1,14 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from revmark import db
+from revmark import db, cache
 from revmark.models import User, Request, Message
 
 bp = Blueprint("main", __name__)
 
 # ---------- PAGES ----------
 @bp.route("/")
+@cache.cached(timeout=60)  # Cache homepage for 1 minute
 def index():
     page = request.args.get('page', 1, type=int)
     requests = Request.query.order_by(Request.timestamp.desc()).paginate(
@@ -142,6 +143,7 @@ def message(receiver_id):
 
 # ---------- BROWSE & VIEW REQUESTS ----------
 @bp.route("/browse")
+@cache.cached(timeout=120)  # Cache browse page for 2 minutes
 def browse_requests():
     page = request.args.get('page', 1, type=int)
     requests = Request.query.order_by(Request.timestamp.desc()).paginate(
@@ -151,6 +153,7 @@ def browse_requests():
 
 
 @bp.route("/request/<int:request_id>")
+@cache.cached(timeout=300)  # Cache individual requests for 5 minutes
 def view_request(request_id):
     request_item = Request.query.get_or_404(request_id)
     return render_template("view_request.html", request=request_item)

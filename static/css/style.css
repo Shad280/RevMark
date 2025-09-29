@@ -31,6 +31,36 @@ body {
   z-index: 100;
 }
 
+.mobile-menu-toggle {
+  display: none;
+  flex-direction: column;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  gap: 3px;
+}
+
+.hamburger-line {
+  width: 25px;
+  height: 3px;
+  background: #2d8f3f;
+  transition: all 0.3s ease;
+  transform-origin: center;
+}
+
+.mobile-menu-toggle.active .hamburger-line:nth-child(1) {
+  transform: rotate(45deg) translate(6px, 6px);
+}
+
+.mobile-menu-toggle.active .hamburger-line:nth-child(2) {
+  opacity: 0;
+}
+
+.mobile-menu-toggle.active .hamburger-line:nth-child(3) {
+  transform: rotate(-45deg) translate(6px, -6px);
+}
+
 .logo-container {
   display: flex;
   align-items: center;
@@ -69,8 +99,12 @@ body {
 
 .nav-links a {
   text-decoration: none;
-  color: #666;
+  color: #333;
   font-weight: 500;
+  transition: color 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   padding: 0.5rem 1rem;
   border-radius: 6px;
   transition: all 0.2s;
@@ -79,6 +113,10 @@ body {
 .nav-links a:hover {
   color: #2d8f3f;
   background: #f8f9fa;
+}
+
+.nav-text {
+  display: inline;
 }
 
 /* Notification Badge */
@@ -404,23 +442,67 @@ li a:hover {
 
 /* Responsive Design */
 @media (max-width: 768px) {
+  .mobile-menu-toggle {
+    display: flex;
+  }
+  
   .navbar {
     padding: 1rem;
-    flex-wrap: wrap;
-    gap: 1rem;
+    position: relative;
   }
   
   .nav-links {
-    gap: 1rem;
-    flex-wrap: wrap;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    flex-direction: column;
+    gap: 0;
+    padding: 1rem 0;
+    border-bottom: 1px solid #e5e5e5;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transform: translateY(-10px);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+  }
+  
+  .nav-links.active {
+    transform: translateY(0);
+    opacity: 1;
+    visibility: visible;
+  }
+  
+  .nav-links li {
+    width: 100%;
+  }
+  
+  .nav-links a {
+    padding: 1rem 2rem;
+    width: 100%;
+    justify-content: flex-start;
+    border-radius: 0;
+  }
+  
+  .nav-text {
+    margin-left: 0.5rem;
   }
   
   .hero {
-    padding: 4rem 1rem;
+    padding: 3rem 1rem;
+    text-align: center;
   }
   
   .hero h1 {
     font-size: 2.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .hero p {
+    font-size: 1.1rem;
+    max-width: 90%;
+    margin: 0 auto 2rem;
   }
   
   .dashboard {
@@ -430,14 +512,60 @@ li a:hover {
   .dashboard-header {
     flex-direction: column;
     align-items: flex-start;
+    gap: 1rem;
   }
   
   .requests-grid {
     grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .request-card {
+    padding: 1.5rem;
+  }
+  
+  .request-card h3 {
+    font-size: 1.2rem;
+  }
+  
+  .request-meta {
+    flex-wrap: wrap;
+    gap: 0.5rem;
   }
   
   .hero-buttons {
     flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+  }
+  
+  .btn {
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
+    min-width: 200px;
+    text-align: center;
+  }
+  
+  /* Form improvements for mobile */
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+  
+  .form-group input,
+  .form-group textarea {
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: 1rem;
+  }
+  
+  /* Card improvements */
+  .feature-card {
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .features-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
 }
 
