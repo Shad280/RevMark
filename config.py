@@ -45,12 +45,23 @@ class Config:
         SQLALCHEMY_DATABASE_URI = DATABASE_URL
         print(f"✅ Using PostgreSQL: {DATABASE_URL.split('@')[1] if '@' in DATABASE_URL else 'configured'}")
     else:
-        # Local development fallback
-        instance_dir = os.path.join(BASE_DIR, 'instance')
-        os.makedirs(instance_dir, exist_ok=True)
-        SQLALCHEMY_DATABASE_URI = f"sqlite:///{os.path.join(BASE_DIR, 'instance', 'revmark.db')}"
-        print("🏠 Using SQLite for local development")
-    
-    # 🚨 Railway Production Check (temporarily disabled for debugging)
-    # if os.getenv("RAILWAY_ENVIRONMENT") and not DATABASE_URL:
-    #     raise RuntimeError("❌ Railway PostgreSQL plugin not configured. Add PostgreSQL plugin to your Railway project.")
+        # Check if this is Railway production without PostgreSQL
+        if os.getenv("RAILWAY_ENVIRONMENT") == "production":
+            print("❌ CRITICAL: PostgreSQL database not configured in Railway!")
+            print("")
+            print("🔧 SOLUTION: The PostgreSQL plugin is not connected to your web service.")
+            print("Follow these steps in Railway dashboard:")
+            print("1. Go to your project dashboard")
+            print("2. Click on your PostgreSQL database service (should show a database icon)")
+            print("3. Go to the 'Connect' or 'Variables' tab")
+            print("4. Make sure your web service is listed in 'Connected Services'")
+            print("5. If not, add your web service to connect the database")
+            print("6. Redeploy your web service after connecting")
+            print("")
+            raise RuntimeError("PostgreSQL database not configured in Railway production environment")
+        else:
+            # Local development fallback
+            instance_dir = os.path.join(BASE_DIR, 'instance')
+            os.makedirs(instance_dir, exist_ok=True)
+            SQLALCHEMY_DATABASE_URI = f"sqlite:///{os.path.join(BASE_DIR, 'instance', 'revmark.db')}"
+            print("🏠 Using SQLite for local development")
