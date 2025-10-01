@@ -6,7 +6,7 @@ class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY") or "revmark-secret-key"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
-    # Performance optimizations
+    # Performance optimizations - Updated Oct 1, 2025
     SQLALCHEMY_ENGINE_OPTIONS = {
         'pool_size': 20,
         'pool_recycle': 3600,
