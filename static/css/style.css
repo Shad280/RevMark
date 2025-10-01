@@ -286,6 +286,66 @@ body {
   line-height: 1.6;
 }
 
+/* Categories Section */
+.categories {
+  padding: 4rem 2rem;
+  background: white;
+}
+
+.categories .container {
+  max-width: 1000px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.categories h2 {
+  font-size: 2.5rem;
+  color: #333;
+  margin-bottom: 3rem;
+  font-weight: 700;
+}
+
+.categories-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.category-card {
+  background: #f8f9fa;
+  padding: 2rem 1.5rem;
+  border-radius: 12px;
+  text-align: center;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.category-card:hover {
+  transform: translateY(-5px);
+  border-color: #2d8f3f;
+  box-shadow: 0 8px 25px rgba(45, 143, 63, 0.15);
+}
+
+.category-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.category-card h3 {
+  color: #333;
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.category-card p {
+  color: #666;
+  line-height: 1.5;
+  font-size: 0.9rem;
+}
+
 .btn-secondary {
   background: transparent;
   color: white;
