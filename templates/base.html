@@ -28,10 +28,13 @@
     
     <ul class="nav-links">
       <li><a href="{{ url_for('main.index') }}">Home</a></li>
-      <li><a href="{{ url_for('main.browse_requests') }}">Browse</a></li>
+      {% if not current_user.is_authenticated %}
+        <li><a href="{{ url_for('main.browse_requests') }}">Browse</a></li>
+      {% endif %}
       <li><a href="{{ url_for('main.about') }}">About</a></li>
-      <li><a href="{{ url_for('main.contact') }}">Contact</a></li>
       {% if current_user.is_authenticated %}
+        <!-- Contact only for logged in users -->
+        <li><a href="{{ url_for('main.contact') }}">Contact</a></li>
         <li>
           <a href="{{ url_for('main.inbox') }}" class="inbox-link">
             <i class="fas fa-inbox"></i>
