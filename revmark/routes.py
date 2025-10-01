@@ -20,6 +20,22 @@ def index():
 def about():
     return render_template("about.html")
 
+@bp.route("/contact", methods=["GET", "POST"])
+def contact():
+    if request.method == "POST":
+        name = request.form.get("name")
+        email = request.form.get("email")
+        subject = request.form.get("subject")
+        message = request.form.get("message")
+        
+        # For now, just flash a success message
+        # Later we'll add email sending functionality
+        flash(f"Thank you {name}! Your message has been received. We'll get back to you at {email} soon.", "success")
+        return redirect(url_for("main.contact"))
+    
+    return render_template("contact.html")
+    return render_template("about.html")
+
 # ---------- AUTH ----------
 @bp.route("/signup", methods=["GET", "POST"])
 def signup():

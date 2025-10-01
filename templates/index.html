@@ -4,10 +4,35 @@
   <!-- Hero Section for Non-authenticated Users -->
   <section class="hero">
     <div class="hero-content">
-      <h1>RevMark</h1>
-      <p>RevMark is a reverse marketplace that puts buyers in control. Post a request for what you want, get offers from sellers, and choose the deal that works best for you. Simple, fast, and tailored to your needs.</p>
+      <h1>Stop Endless Scrolling. Post What You Need.</h1>
+      <p>The reverse marketplace where buyers post requests and sellers compete for your business. Get multiple quotes, compare offers, choose the best deal.</p>
       <div class="hero-buttons">
-        <a href="{{ url_for('main.signup') }}" class="btn btn-primary">Sign Up</a>
+        <a href="{{ url_for('main.signup') }}" class="btn btn-primary">Post Your First Request</a>
+        <a href="{{ url_for('main.browse_requests') }}" class="btn btn-secondary">Browse Requests</a>
+      </div>
+    </div>
+  </section>
+  
+  <!-- How It Works Section -->
+  <section class="how-it-works">
+    <div class="container">
+      <h2>How RevMark Works</h2>
+      <div class="steps-grid">
+        <div class="step">
+          <div class="step-number">1</div>
+          <h3>Post Your Request</h3>
+          <p>Describe exactly what you need - a service, product, or project. Set your budget and timeline.</p>
+        </div>
+        <div class="step">
+          <div class="step-number">2</div>
+          <h3>Sellers Respond</h3>
+          <p>Qualified sellers browse requests and send you proposals with their offers and pricing.</p>
+        </div>
+        <div class="step">
+          <div class="step-number">3</div>
+          <h3>Choose the Best</h3>
+          <p>Compare responses, chat with sellers, and pick the offer that works best for you.</p>
+        </div>
       </div>
     </div>
   </section>

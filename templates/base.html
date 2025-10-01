@@ -28,7 +28,9 @@
     
     <ul class="nav-links">
       <li><a href="{{ url_for('main.index') }}">Home</a></li>
+      <li><a href="{{ url_for('main.browse_requests') }}">Browse</a></li>
       <li><a href="{{ url_for('main.about') }}">About</a></li>
+      <li><a href="{{ url_for('main.contact') }}">Contact</a></li>
       {% if current_user.is_authenticated %}
         <li>
           <a href="{{ url_for('main.inbox') }}" class="inbox-link">
@@ -67,8 +69,7 @@
       
       <div class="footer-contact">
         <h3>Contact</h3>
-        <p>Email: <a href="mailto:support@revmark.com">support@revmark.com</a></p>
-        <p>Phone: +1 234 567 8900</p>
+        <p>Email: <a href="mailto:contact@revmark.shop">contact@revmark.shop</a></p>
       </div>
 
       <div class="footer-social">
