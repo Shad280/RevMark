@@ -1,0 +1,74 @@
+{% extends 'admin/master.html' %}
+
+{% block body %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <h1>RevMark Admin Dashboard</h1>
+            <p class="lead">Welcome to the RevMark administration panel</p>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-4">
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+                    <h3 class="panel-title">Users</h3>
+                </div>
+                <div class="panel-body">
+                    <h2>{{ user_count }}</h2>
+                    <p>Total registered users</p>
+                    <a href="{{ url_for('user.index_view') }}" class="btn btn-primary">Manage Users</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="panel panel-success">
+                <div class="panel-heading">
+                    <h3 class="panel-title">Requests</h3>
+                </div>
+                <div class="panel-body">
+                    <h2>{{ request_count }}</h2>
+                    <p>Total requests posted</p>
+                    <a href="{{ url_for('request.index_view') }}" class="btn btn-success">Manage Requests</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="panel panel-info">
+                <div class="panel-heading">
+                    <h3 class="panel-title">Messages</h3>
+                </div>
+                <div class="panel-body">
+                    <h2>{{ message_count }}</h2>
+                    <p>Total messages sent</p>
+                    <a href="{{ url_for('message.index_view') }}" class="btn btn-info">View Messages</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-12">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">Quick Actions</h3>
+                </div>
+                <div class="panel-body">
+                    <a href="{{ url_for('main.index') }}" class="btn btn-default" target="_blank">
+                        <i class="fa fa-external-link"></i> View Live Site
+                    </a>
+                    <a href="{{ url_for('user.create_view') }}" class="btn btn-primary">
+                        <i class="fa fa-plus"></i> Add New User
+                    </a>
+                    <a href="{{ url_for('request.index_view') }}" class="btn btn-success">
+                        <i class="fa fa-list"></i> Latest Requests
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

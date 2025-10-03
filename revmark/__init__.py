@@ -24,6 +24,10 @@ def create_app():
     login_manager.init_app(app)
     cache.init_app(app)
 
+    # Initialize admin panel
+    from revmark.admin import init_admin
+    init_admin(app, db)
+
     # Import and register blueprints
     from revmark import routes, models
     app.register_blueprint(routes.bp)
