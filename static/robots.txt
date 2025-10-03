@@ -1,0 +1,18 @@
+User-agent: *
+Allow: /
+
+# Important pages
+Allow: /
+Allow: /about
+Allow: /browse
+Allow: /signup
+Allow: /login
+
+# Block admin/private areas
+Disallow: /admin
+Disallow: /account
+Disallow: /inbox
+Disallow: /post_request
+
+# Sitemap location
+Sitemap: https://revmark.shop/static/sitemap.xml

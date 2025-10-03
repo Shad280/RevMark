@@ -3,7 +3,26 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RevMark</title>
+  <title>{% block title %}RevMark - Custom Request Marketplace | Connect with Skilled Providers{% endblock %}</title>
+  <meta name="description" content="{% block description %}RevMark is the marketplace for custom requests. Post what you need and connect with freelancers, local businesses, and specialists who can deliver exactly what you're looking for.{% endblock %}">
+  <meta name="keywords" content="custom requests, marketplace, freelancers, local services, custom work, specialists, providers, custom solutions, made to order">
+  <meta name="author" content="RevMark">
+  
+  <!-- Open Graph / Social Media -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://revmark.shop">
+  <meta property="og:title" content="RevMark - Custom Request Marketplace">
+  <meta property="og:description" content="Post your custom request and connect with skilled providers who can deliver exactly what you need.">
+  <meta property="og:image" content="{{ url_for('static', filename='img/logo.png', _external=True) }}">
+  
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://revmark.shop">
+  <meta property="twitter:title" content="RevMark - Custom Request Marketplace">
+  <meta property="twitter:description" content="Post your custom request and connect with skilled providers who can deliver exactly what you need.">
+  <meta property="twitter:image" content="{{ url_for('static', filename='img/logo.png', _external=True) }}">
+  
+  <link rel="canonical" href="https://revmark.shop">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/mobile-enhancements.css') }}">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">

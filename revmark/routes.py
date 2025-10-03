@@ -198,3 +198,23 @@ def delete_request(request_id):
     db.session.commit()
     flash("Request deleted successfully!", "success")
     return redirect(url_for("main.account"))
+
+
+# ---------- SEO ROUTES ----------
+@bp.route("/sitemap.xml")
+def sitemap():
+    from flask import make_response, send_from_directory
+    import os
+    static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static')
+    response = make_response(send_from_directory(static_dir, 'sitemap.xml'))
+    response.headers["Content-Type"] = "application/xml"
+    return response
+
+@bp.route("/robots.txt")
+def robots():
+    from flask import make_response, send_from_directory
+    import os
+    static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static')
+    response = make_response(send_from_directory(static_dir, 'robots.txt'))
+    response.headers["Content-Type"] = "text/plain"
+    return response
