@@ -218,3 +218,8 @@ def robots():
     response = make_response(send_from_directory(static_dir, 'robots.txt'))
     response.headers["Content-Type"] = "text/plain"
     return response
+
+@bp.route("/google02fb930af811e7de.html")
+def google_verification():
+    from flask import Response
+    return Response("google-site-verification: google02fb930af811e7de.html", mimetype='text/html')
