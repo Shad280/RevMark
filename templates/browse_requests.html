@@ -20,7 +20,7 @@
                         </a>
                     </div>
                     <div class="request-meta">
-                        Posted by {{ request.buyer.username }} • {{ request.timestamp.strftime('%Y-%m-%d %H:%M') }}
+                        Posted by <span class="anonymous-user">Anonymous User</span> • {{ request.timestamp.strftime('%Y-%m-%d %H:%M') }}
                         {% if request.budget %}
                             • Budget: <span class="request-budget">${{ "%.2f"|format(request.budget) }}</span>
                         {% endif %}
@@ -30,7 +30,7 @@
                     </div>
                     <div class="mt-2">
                         {% if current_user.is_authenticated and current_user.id != request.buyer_id %}
-                            <a href="{{ url_for('main.contact_user', user_id=request.buyer_id) }}" class="btn btn-primary">Contact</a>
+                            <a href="{{ url_for('main.message', receiver_id=request.buyer_id) }}" class="btn btn-primary">Contact</a>
                         {% endif %}
                         <a href="{{ url_for('main.view_request', request_id=request.id) }}" class="btn btn-outline">View Details</a>
                     </div>

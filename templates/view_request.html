@@ -9,7 +9,7 @@
             <div class="card-header">
                 <h2 class="card-title">{{ request.title }}</h2>
                 <div class="request-meta">
-                    Posted by <strong>{{ request.buyer.username }}</strong> • {{ request.timestamp.strftime('%Y-%m-%d %H:%M') }}
+                    Posted by <strong>Anonymous User</strong> • {{ request.timestamp.strftime('%Y-%m-%d %H:%M') }}
                     {% if request.budget %}
                         • Budget: <span class="request-budget">${{ "%.2f"|format(request.budget) }}</span>
                     {% endif %}
@@ -22,7 +22,7 @@
             
             <div class="mt-3">
                 {% if current_user.is_authenticated and current_user.id != request.buyer_id %}
-                    <a href="{{ url_for('main.message', receiver_id=request.buyer_id) }}" class="btn btn-primary">Contact {{ request.buyer.username }}</a>
+                    <a href="{{ url_for('main.message', receiver_id=request.buyer_id) }}" class="btn btn-primary">Contact Requester</a>
                 {% elif not current_user.is_authenticated %}
                     <a href="{{ url_for('main.login') }}" class="btn btn-primary">Login to Contact</a>
                 {% endif %}
@@ -39,7 +39,7 @@
             <table style="width: 100%;">
                 <tr>
                     <td><strong>Posted by:</strong></td>
-                    <td>{{ request.buyer.username }}</td>
+                    <td>Anonymous User</td>
                 </tr>
                 <tr>
                     <td><strong>Date:</strong></td>
@@ -63,7 +63,7 @@
             <div class="card-header">
                 <h3 class="card-title">Interested?</h3>
             </div>
-            <p>Contact {{ request.buyer.username }} to discuss this opportunity and share your expertise.</p>
+            <p>Contact the requester to discuss this opportunity and share your expertise.</p>
             <div class="text-center">
                 <a href="{{ url_for('main.contact_user', user_id=request.buyer_id) }}" class="btn btn-success">Send Message</a>
             </div>
