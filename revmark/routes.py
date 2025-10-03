@@ -8,7 +8,6 @@ bp = Blueprint("main", __name__)
 
 # ---------- PAGES ----------
 @bp.route("/")
-@cache.cached(timeout=60)  # Cache homepage for 1 minute
 def index():
     page = request.args.get('page', 1, type=int)
     requests = Request.query.order_by(Request.timestamp.desc()).paginate(
@@ -159,7 +158,6 @@ def message(receiver_id):
 
 # ---------- BROWSE & VIEW REQUESTS ----------
 @bp.route("/browse")
-@cache.cached(timeout=120)  # Cache browse page for 2 minutes
 def browse_requests():
     page = request.args.get('page', 1, type=int)
     requests = Request.query.order_by(Request.timestamp.desc()).paginate(
@@ -169,7 +167,6 @@ def browse_requests():
 
 
 @bp.route("/request/<int:request_id>")
-@cache.cached(timeout=300)  # Cache individual requests for 5 minutes
 def view_request(request_id):
     request_item = Request.query.get_or_404(request_id)
     return render_template("view_request.html", request=request_item)
@@ -223,3 +220,12 @@ def robots():
 def google_verification():
     from flask import Response
     return Response("google-site-verification: google02fb930af811e7de.html", mimetype='text/html')
+
+@bp.route("/BingSiteAuth.xml")
+def bing_verification():
+    from flask import Response
+    xml_content = """<?xml version="1.0"?>
+<users>
+    <user>BING_VERIFICATION_CODE_HERE</user>
+</users>"""
+    return Response(xml_content, mimetype='application/xml')
