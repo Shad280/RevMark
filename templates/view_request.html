@@ -9,7 +9,7 @@
             <div class="card-header">
                 <h2 class="card-title">{{ request.title }}</h2>
                 <div class="request-meta">
-                    Posted by <strong>Anonymous User</strong> • {{ request.timestamp.strftime('%Y-%m-%d %H:%M') }}
+                    Posted {{ request.timestamp.strftime('%Y-%m-%d %H:%M') }}
                     {% if request.budget %}
                         • Budget: <span class="request-budget">${{ "%.2f"|format(request.budget) }}</span>
                     {% endif %}
@@ -38,16 +38,8 @@
             </div>
             <table style="width: 100%;">
                 <tr>
-                    <td><strong>Posted by:</strong></td>
-                    <td>Anonymous User</td>
-                </tr>
-                <tr>
-                    <td><strong>Date:</strong></td>
-                    <td>{{ request.timestamp.strftime('%Y-%m-%d') }}</td>
-                </tr>
-                <tr>
-                    <td><strong>Time:</strong></td>
-                    <td>{{ request.timestamp.strftime('%H:%M') }}</td>
+                    <td><strong>Posted:</strong></td>
+                    <td>{{ request.timestamp.strftime('%Y-%m-%d at %H:%M') }}</td>
                 </tr>
                 {% if request.budget %}
                 <tr>
