@@ -1,8 +1,9 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime
 from revmark import db, cache
-from revmark.models import User, Request, Message
+from revmark.models import User, Request, Message, MessageAttachment, EscrowPayment
 
 bp = Blueprint("main", __name__)
 
@@ -143,6 +144,36 @@ def message(receiver_id):
         body = request.form["body"]
         msg = Message(body=body, sender=current_user, receiver=receiver)
         db.session.add(msg)
+        db.session.flush()  # Get the message ID
+        
+        # Handle file attachments
+        if 'attachments' in request.files:
+            files = request.files.getlist('attachments')
+            for file in files:
+                if file and file.filename:
+                    try:
+                        # Check if AWS S3 is configured
+                        if not current_app.config.get('AWS_ACCESS_KEY_ID'):
+                            flash("File upload not available (AWS S3 not configured)", "warning")
+                            continue
+                            
+                        # Upload to S3
+                        from revmark.s3_utils import s3_manager
+                        file_info = s3_manager.upload_file(file, folder="message-attachments")
+                        
+                        # Create attachment record
+                        attachment = MessageAttachment(
+                            message_id=msg.id,
+                            filename=file_info['s3_key'].split('/')[-1],
+                            original_filename=file_info['original_filename'],
+                            s3_key=file_info['s3_key'],
+                            file_size=file_info['file_size'],
+                            content_type=file_info['content_type']
+                        )
+                        db.session.add(attachment)
+                    except Exception as e:
+                        flash(f"Failed to upload {file.filename}: File upload service unavailable", "warning")
+        
         db.session.commit()
         flash("Message sent!", "success")
         return redirect(url_for("main.message", receiver_id=receiver.id))
@@ -172,12 +203,79 @@ def view_request(request_id):
     return render_template("view_request.html", request=request_item)
 
 
+# ---------- PAYMENT ROUTES ----------
+@bp.route("/payment/<int:request_id>")
+@login_required
+def payment(request_id):
+    """Show payment page for a request"""
+    request_obj = Request.query.get_or_404(request_id)
+    
+    # Check if user is the buyer
+    if request_obj.buyer_id != current_user.id:
+        flash("Access denied. You can only fund your own requests.", "danger")
+        return redirect(url_for("main.view_request", request_id=request_id))
+    
+    # Check if Stripe is configured
+    if not current_app.config.get('STRIPE_PUBLIC_KEY'):
+        flash("Payment processing not available. Please contact support.", "warning")
+        return redirect(url_for("main.view_request", request_id=request_id))
+    
+    # Get seller if assigned
+    seller = None
+    if request_obj.seller_id:
+        seller = User.query.get(request_obj.seller_id)
+    
+    return render_template("payment.html", 
+                         request=request_obj, 
+                         seller=seller,
+                         stripe_public_key=current_app.config.get('STRIPE_PUBLIC_KEY'),
+                         platform_fee=current_app.config.get('PLATFORM_FEE_PERCENTAGE', 5.0))
+
+@bp.route("/seller/onboarding/complete")
+@login_required
+def seller_onboarding_complete():
+    """Handle successful Stripe Connect onboarding"""
+    if not current_user.stripe_account_id:
+        flash("No seller account found. Please contact support.", "danger")
+        return redirect(url_for("main.account"))
+    
+    # Update onboarding status
+    from revmark.stripe_utils import stripe_manager
+    try:
+        status = stripe_manager.get_account_status(current_user.stripe_account_id)
+        if status:
+            current_user.stripe_onboarding_complete = (
+                status['charges_enabled'] and 
+                status['payouts_enabled'] and 
+                status['details_submitted']
+            )
+            db.session.commit()
+            
+        if current_user.stripe_onboarding_complete:
+            flash("Congratulations! Your seller account is now active. You can start receiving payments.", "success")
+        else:
+            flash("Your seller account is being reviewed. You'll be able to receive payments once approved.", "info")
+            
+    except Exception as e:
+        flash("There was an issue verifying your account. Please try again later.", "warning")
+    
+    return redirect(url_for("main.account"))
+
+@bp.route("/seller/onboarding/refresh")
+@login_required
+def seller_onboarding_refresh():
+    """Handle Stripe Connect onboarding refresh"""
+    flash("Please complete your seller account setup to start receiving payments.", "info")
+    return redirect(url_for("main.account"))
+
+
 # ---------- ACCOUNT MANAGEMENT ----------
 @bp.route("/account")
 @login_required
 def account():
+    tab = request.args.get('tab', 'profile')  # Default to profile tab
     user_requests = Request.query.filter_by(buyer_id=current_user.id).order_by(Request.timestamp.desc()).all()
-    return render_template("account.html", requests=user_requests)
+    return render_template("account.html", requests=user_requests, active_tab=tab)
 
 
 @bp.route("/delete_request/<int:request_id>", methods=["POST"])
@@ -229,3 +327,155 @@ def bing_verification():
     <user>BING_VERIFICATION_CODE_HERE</user>
 </users>"""
     return Response(xml_content, mimetype='application/xml')
+
+# ---------- STRIPE CONNECT ----------
+@bp.route("/seller/dashboard")
+@login_required
+def seller_dashboard():
+    """Redirect to account page with seller tab active"""
+    return redirect(url_for('main.account', tab='seller'))
+
+@bp.route("/stripe/onboard", methods=["POST"])
+@login_required
+def onboard_seller():
+    """Create Stripe Connect onboarding link for seller"""
+    from revmark.stripe_utils import StripeManager
+    import json
+    
+    try:
+        stripe_manager = StripeManager()
+        
+        # Create or retrieve Stripe account
+        if not current_user.stripe_account_id:
+            # Create new connected account
+            account = stripe_manager.create_connect_account(
+                email=current_user.email,
+                user_id=current_user.id
+            )
+            
+            # Save account ID to user
+            current_user.stripe_account_id = account['id']
+            db.session.commit()
+        
+        # Create onboarding link
+        account_link = stripe_manager.create_account_link(
+            account_id=current_user.stripe_account_id,
+            return_url=url_for('main.stripe_onboard_complete', _external=True),
+            refresh_url=url_for('main.stripe_onboard_refresh', _external=True)
+        )
+        
+        return {"success": True, "url": account_link['url']}
+        
+    except Exception as e:
+        current_app.logger.error(f"Stripe onboarding error: {str(e)}")
+        return {"success": False, "error": str(e)}, 400
+
+@bp.route("/stripe/onboard/complete")
+@login_required  
+def stripe_onboard_complete():
+    """Handle successful Stripe onboarding completion"""
+    from revmark.stripe_utils import StripeManager
+    
+    try:
+        stripe_manager = StripeManager()
+        
+        if current_user.stripe_account_id:
+            # Check account status
+            account = stripe_manager.get_account(current_user.stripe_account_id)
+            
+            # Update onboarding status based on account details
+            if account.get('details_submitted') and account.get('charges_enabled'):
+                current_user.stripe_onboarding_complete = True
+                db.session.commit()
+                flash("🎉 Stripe account connected successfully! You can now receive payments.", "success")
+            else:
+                flash("Please complete your Stripe account setup to receive payments.", "warning")
+        
+        return redirect(url_for('main.seller_dashboard'))
+        
+    except Exception as e:
+        current_app.logger.error(f"Stripe onboarding completion error: {str(e)}")
+        flash("There was an issue completing your Stripe setup. Please try again.", "danger")
+        return redirect(url_for('main.seller_dashboard'))
+
+@bp.route("/stripe/onboard/refresh")
+@login_required
+def stripe_onboard_refresh():
+    """Handle Stripe onboarding refresh/retry"""
+    flash("Let's try connecting your Stripe account again.", "info")
+    return redirect(url_for('main.seller_dashboard'))
+
+@bp.route("/stripe/webhook", methods=["POST"])
+def stripe_webhook():
+    """Handle Stripe webhooks for payment and account events"""
+    from revmark.stripe_utils import StripeManager
+    import stripe
+    
+    payload = request.data
+    sig_header = request.headers.get("Stripe-Signature")
+    
+    try:
+        stripe_manager = StripeManager()
+        event = stripe_manager.verify_webhook(payload, sig_header)
+        
+        current_app.logger.info(f"Received Stripe webhook: {event['type']}")
+        
+        if event["type"] == "payment_intent.succeeded":
+            payment_intent = event["data"]["object"]
+            current_app.logger.info(f"💰 Payment successful for {payment_intent['id']}")
+            
+            # Update request and escrow payment status
+            request_id = payment_intent['metadata'].get('request_id')
+            if request_id:
+                request_obj = Request.query.get(request_id)
+                if request_obj:
+                    request_obj.status = 'funded'
+                    db.session.commit()
+                    
+                # Update escrow payment record
+                escrow_payment = EscrowPayment.query.filter_by(
+                    stripe_payment_intent_id=payment_intent['id']
+                ).first()
+                if escrow_payment:
+                    escrow_payment.status = 'paid'
+                    escrow_payment.paid_at = datetime.utcnow()
+                    db.session.commit()
+            
+        elif event["type"] == "transfer.paid":
+            transfer = event["data"]["object"]
+            current_app.logger.info(f"✅ Transfer completed for {transfer['id']}")
+            
+            # Find and update related request status
+            if 'metadata' in transfer and 'request_id' in transfer['metadata']:
+                request_id = transfer['metadata']['request_id']
+                request_obj = Request.query.get(request_id)
+                if request_obj:
+                    request_obj.status = 'completed'
+                    db.session.commit()
+            
+        elif event["type"] == "account.updated":
+            account = event["data"]["object"]
+            current_app.logger.info(f"👤 Account updated: {account['id']}")
+            
+            # Update user's onboarding status
+            user = User.query.filter_by(stripe_account_id=account['id']).first()
+            if user:
+                if account.get('details_submitted') and account.get('charges_enabled'):
+                    user.stripe_onboarding_complete = True
+                    db.session.commit()
+                    
+        elif event["type"] == "payment_intent.payment_failed":
+            payment_intent = event["data"]["object"]
+            current_app.logger.warning(f"❌ Payment failed for {payment_intent['id']}")
+            
+        return "Success", 200
+        
+    except ValueError as e:
+        current_app.logger.error(f"Invalid webhook payload: {str(e)}")
+        return "Invalid payload", 400
+    except stripe.error.SignatureVerificationError as e:
+        current_app.logger.error(f"Invalid webhook signature: {str(e)}")
+        return "Invalid signature", 400
+    except Exception as e:
+        current_app.logger.error(f"Webhook error: {str(e)}")
+        return "Webhook error", 500

@@ -30,7 +30,9 @@ def create_app():
 
     # Import and register blueprints
     from revmark import routes, models
+    from revmark.api_routes import api_bp
     app.register_blueprint(routes.bp)
+    app.register_blueprint(api_bp)
 
     # Create tables only when appropriate
     # In production, tables should be created via migration or manual setup

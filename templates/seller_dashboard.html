@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="dashboard">
+  <div class="dashboard-header">
+    <h1>💼 Seller Dashboard</h1>
+    <p>Manage your seller profile and track your earnings</p>
+  </div>
+
+  <!-- Stripe Connect Status -->
+  <div class="connect-status" style="margin-bottom: 2rem;">
+    {% if user.is_verified_seller %}
+      <div class="status-card verified" style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; padding: 1.5rem;">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+          <div style="font-size: 2rem;">✅</div>
+          <div>
+            <h3 style="margin: 0; color: #155724;">Stripe Account Connected</h3>
+            <p style="margin: 0.5rem 0 0 0; color: #155724;">You're ready to receive payments from buyers!</p>
+          </div>
+        </div>
+        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #c3e6cb;">
+          <small style="color: #155724;">
+            <strong>Account ID:</strong> {{ user.stripe_account_id[:12] }}...
+          </small>
+        </div>
+      </div>
+    {% else %}
+      <div class="status-card unverified" style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 1.5rem;">
+        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+          <div style="font-size: 2rem;">⚠️</div>
+          <div>
+            <h3 style="margin: 0; color: #856404;">Connect Your Stripe Account</h3>
+            <p style="margin: 0.5rem 0 0 0; color: #856404;">Start receiving payments by connecting your Stripe account</p>
+          </div>
+        </div>
+        
+        <div style="margin-bottom: 1rem;">
+          <h4 style="color: #856404; margin-bottom: 0.5rem;">Why connect Stripe?</h4>
+          <ul style="margin: 0; padding-left: 1.5rem; color: #856404;">
+            <li>Receive payments securely when buyers fund requests</li>
+            <li>Get paid automatically when work is approved</li>
+            <li>Access to RevMark's escrow protection system</li>
+            <li>Professional payment processing and invoicing</li>
+          </ul>
+        </div>
+        
+        <button id="connect-stripe" class="btn btn-primary" style="width: 100%; padding: 1rem;">
+          🔗 Connect with Stripe
+        </button>
+        
+        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #ffeaa7;">
+          <small style="color: #856404;">
+            ℹ️ <strong>Safe & Secure:</strong> Your banking information is handled directly by Stripe. 
+            RevMark never sees or stores your banking details.
+          </small>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Seller Stats -->
+  <div class="seller-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+    <div class="stat-card" style="background: white; border-radius: 8px; padding: 1.5rem; text-align: center; border: 1px solid #e9ecef;">
+      <div style="font-size: 2rem; margin-bottom: 0.5rem;">📊</div>
+      <h3 style="margin: 0; font-size: 1.5rem; color: #333;">{{ requests|length }}</h3>
+      <p style="margin: 0.5rem 0 0 0; color: #666;">Active Requests</p>
+    </div>
+    
+    <div class="stat-card" style="background: white; border-radius: 8px; padding: 1.5rem; text-align: center; border: 1px solid #e9ecef;">
+      <div style="font-size: 2rem; margin-bottom: 0.5rem;">💰</div>
+      <h3 style="margin: 0; font-size: 1.5rem; color: #333;">$0.00</h3>
+      <p style="margin: 0.5rem 0 0 0; color: #666;">Total Earnings</p>
+    </div>
+    
+    <div class="stat-card" style="background: white; border-radius: 8px; padding: 1.5rem; text-align: center; border: 1px solid #e9ecef;">
+      <div style="font-size: 2rem; margin-bottom: 0.5rem;">⭐</div>
+      <h3 style="margin: 0; font-size: 1.5rem; color: #333;">5.0</h3>
+      <p style="margin: 0.5rem 0 0 0; color: #666;">Average Rating</p>
+    </div>
+    
+    <div class="stat-card" style="background: white; border-radius: 8px; padding: 1.5rem; text-align: center; border: 1px solid #e9ecef;">
+      <div style="font-size: 2rem; margin-bottom: 0.5rem;">🎯</div>
+      <h3 style="margin: 0; font-size: 1.5rem; color: #333;">0</h3>
+      <p style="margin: 0.5rem 0 0 0; color: #666;">Completed Jobs</p>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="quick-actions" style="margin-bottom: 2rem;">
+    <h3>Quick Actions</h3>
+    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+      <a href="{{ url_for('main.browse_requests') }}" class="btn btn-primary">
+        🔍 Browse Requests
+      </a>
+      <a href="{{ url_for('main.inbox') }}" class="btn btn-outline">
+        💬 Messages {% if user.unread_message_count() > 0 %}({{ user.unread_message_count() }}){% endif %}
+      </a>
+      <a href="{{ url_for('main.account') }}" class="btn btn-outline">
+        ⚙️ Account Settings
+      </a>
+    </div>
+  </div>
+
+  <!-- Recent Requests -->
+  <div class="recent-requests">
+    <h3>Your Recent Requests</h3>
+    {% if requests %}
+      <div class="requests-grid" style="display: grid; gap: 1rem;">
+        {% for request in requests[:5] %}
+          <div class="request-card" style="background: white; border-radius: 8px; padding: 1.5rem; border: 1px solid #e9ecef;">
+            <div style="display: flex; justify-content: between; align-items: start; margin-bottom: 1rem;">
+              <div style="flex: 1;">
+                <h4 style="margin: 0 0 0.5rem 0;">
+                  <a href="{{ url_for('main.view_request', request_id=request.id) }}" style="text-decoration: none; color: #333;">
+                    {{ request.title }}
+                  </a>
+                </h4>
+                <p style="margin: 0; color: #666; font-size: 0.9rem;">
+                  {{ request.description[:100] }}{% if request.description|length > 100 %}...{% endif %}
+                </p>
+              </div>
+              <div class="request-status" style="margin-left: 1rem;">
+                {% if request.status == 'open' %}
+                  <span class="status-badge open" style="background: #d1ecf1; color: #0c5460; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.8rem;">Open</span>
+                {% elif request.status == 'funded' %}
+                  <span class="status-badge funded" style="background: #d4edda; color: #155724; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.8rem;">Funded</span>
+                {% elif request.status == 'completed' %}
+                  <span class="status-badge completed" style="background: #d1ecf1; color: #0c5460; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.8rem;">Completed</span>
+                {% endif %}
+              </div>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e9ecef; font-size: 0.9rem; color: #666;">
+              <span>Budget: ${{ "%.2f"|format(request.budget) if request.budget else "Negotiable" }}</span>
+              <span>{{ request.timestamp.strftime('%b %d') }}</span>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+      
+      {% if requests|length > 5 %}
+        <div style="text-align: center; margin-top: 1rem;">
+          <a href="{{ url_for('main.my_requests') }}" class="btn btn-outline">View All Requests</a>
+        </div>
+      {% endif %}
+    {% else %}
+      <div class="empty-state" style="text-align: center; padding: 3rem; color: #666;">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">📝</div>
+        <h4>No requests yet</h4>
+        <p>Start browsing requests to find opportunities that match your skills.</p>
+        <a href="{{ url_for('main.browse_requests') }}" class="btn btn-primary">Browse Requests</a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Stripe Connect JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const connectButton = document.getElementById('connect-stripe');
+    
+    if (connectButton) {
+        connectButton.addEventListener('click', async function() {
+            try {
+                // Disable button and show loading state
+                connectButton.disabled = true;
+                connectButton.innerHTML = '🔄 Connecting...';
+                
+                // Create onboarding link
+                const response = await fetch('/stripe/onboard', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Redirect to Stripe onboarding
+                    window.location.href = data.url;
+                } else {
+                    throw new Error(data.error || 'Failed to create onboarding link');
+                }
+                
+            } catch (error) {
+                console.error('Stripe onboarding error:', error);
+                alert('Error connecting to Stripe: ' + error.message);
+                
+                // Re-enable button
+                connectButton.disabled = false;
+                connectButton.innerHTML = '🔗 Connect with Stripe';
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

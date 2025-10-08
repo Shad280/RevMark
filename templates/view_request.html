@@ -21,8 +21,29 @@
             </div>
             
             <div class="mt-3">
-                {% if current_user.is_authenticated and current_user.id != request.buyer_id %}
-                    <a href="{{ url_for('main.message', receiver_id=request.buyer_id) }}" class="btn btn-primary">Contact Requester</a>
+                {% if current_user.is_authenticated and current_user.id == request.buyer_id %}
+                    <!-- Buyer actions -->
+                    {% if request.status == 'open' %}
+                        <a href="{{ url_for('main.payment', request_id=request.id) }}" class="btn btn-primary">💳 Fund This Request</a>
+                    {% elif request.status == 'funded' %}
+                        <a href="{{ url_for('main.payment', request_id=request.id) }}" class="btn btn-success">✅ Manage Payment</a>
+                        {% if request.seller_id %}
+                            <a href="{{ url_for('main.message', receiver_id=request.seller_id) }}" class="btn btn-primary">💬 Message Seller</a>
+                        {% endif %}
+                    {% elif request.status == 'completed' %}
+                        <span class="btn btn-success" disabled>🎉 Completed</span>
+                    {% endif %}
+                    <a href="{{ url_for('main.account') }}" class="btn btn-outline">← My Requests</a>
+                {% elif current_user.is_authenticated and current_user.id != request.buyer_id %}
+                    <!-- Seller actions -->
+                    {% if request.status == 'open' %}
+                        <a href="{{ url_for('main.message', receiver_id=request.buyer_id) }}" class="btn btn-primary">📩 Submit Proposal</a>
+                    {% elif request.status == 'funded' and request.seller_id == current_user.id %}
+                        <a href="{{ url_for('main.message', receiver_id=request.buyer_id) }}" class="btn btn-primary">💬 Message Buyer</a>
+                        <span class="btn btn-success" disabled>💰 Payment Secured</span>
+                    {% else %}
+                        <a href="{{ url_for('main.message', receiver_id=request.buyer_id) }}" class="btn btn-primary">Contact Requester</a>
+                    {% endif %}
                 {% elif not current_user.is_authenticated %}
                     <a href="{{ url_for('main.login') }}" class="btn btn-primary">Login to Contact</a>
                 {% endif %}
@@ -41,10 +62,36 @@
                     <td><strong>Posted:</strong></td>
                     <td>{{ request.timestamp.strftime('%Y-%m-%d at %H:%M') }}</td>
                 </tr>
+                <tr>
+                    <td><strong>Status:</strong></td>
+                    <td>
+                        <span class="status-badge status-{{ request.status or 'open' }}">
+                            {% if request.status == 'open' %}
+                                🟢 Open
+                            {% elif request.status == 'funded' %}
+                                💰 Funded
+                            {% elif request.status == 'in_progress' %}
+                                🔄 In Progress
+                            {% elif request.status == 'completed' %}
+                                ✅ Completed
+                            {% elif request.status == 'cancelled' %}
+                                ❌ Cancelled
+                            {% else %}
+                                🟢 Open
+                            {% endif %}
+                        </span>
+                    </td>
+                </tr>
                 {% if request.budget %}
                 <tr>
                     <td><strong>Budget:</strong></td>
                     <td class="request-budget">${{ "%.2f"|format(request.budget) }}</td>
+                </tr>
+                {% endif %}
+                {% if request.seller_id %}
+                <tr>
+                    <td><strong>Seller:</strong></td>
+                    <td>{{ request.seller.username }}</td>
                 </tr>
                 {% endif %}
             </table>

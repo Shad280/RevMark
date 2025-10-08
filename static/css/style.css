@@ -924,3 +924,101 @@ li a:hover {
     font-size: 20px;
   }
 }
+
+/* Status Badges */
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: center;
+}
+
+.status-open {
+  background-color: #d1ecf1;
+  color: #0c5460;
+  border: 1px solid #bee5eb;
+}
+
+.status-funded {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+}
+
+.status-in_progress {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.status-completed {
+  background-color: #d1ecf1;
+  color: #0c5460;
+  border: 1px solid #bee5eb;
+}
+
+.status-cancelled {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+/* Payment Form Styles */
+.payment-container {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.payment-breakdown {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  padding: 1rem;
+}
+
+.escrow-info {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 6px;
+  border-left: 4px solid #ffc107;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+/* File Upload Styles */
+.message-attachments {
+  margin-top: 0.5rem;
+}
+
+.attachment-item {
+  display: inline-block;
+  margin: 0.25rem;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.attachment-item a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.attachment-item:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Responsive Payment Form */
+@media (max-width: 768px) {
+  .payment-container {
+    margin: 0 1rem;
+    padding: 1rem;
+  }
+  
+  .status-badge {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.5rem;
+  }
+}

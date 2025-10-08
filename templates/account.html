@@ -10,11 +10,19 @@
   </div>
   
   <div class="account-tabs">
-    <button class="tab-button active" onclick="showTab('profile')">
+    <button class="tab-button" onclick="showTab('profile')">
       <i class="fas fa-user"></i> Profile
     </button>
     <button class="tab-button" onclick="showTab('posts')">
       <i class="fas fa-file-alt"></i> My Posts ({{ requests|length }})
+    </button>
+    <button class="tab-button" onclick="showTab('seller')">
+      <i class="fas fa-briefcase"></i> Seller
+      {% if current_user.is_verified_seller %}
+        <span class="status-indicator verified">✓</span>
+      {% else %}
+        <span class="status-indicator pending">!</span>
+      {% endif %}
     </button>
     <button class="tab-button" onclick="showTab('settings')">
       <i class="fas fa-cog"></i> Settings
@@ -22,7 +30,7 @@
   </div>
 
   <!-- Profile Tab -->
-  <div id="profile" class="tab-content active">
+  <div id="profile" class="tab-content">
     <div class="profile-section">
       <div class="profile-card">
         <div class="profile-avatar">
@@ -101,6 +109,108 @@
             <a href="{{ url_for('main.post_request') }}" class="btn btn-primary">Post Your First Request</a>
           </div>
         {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Seller Tab -->
+  <div id="seller" class="tab-content">
+    <div class="seller-section">
+      <h2>💼 Seller Dashboard</h2>
+      <p>Manage your seller profile and track your earnings</p>
+
+      <!-- Stripe Connect Status -->
+      <div class="connect-status" style="margin-bottom: 2rem;">
+        {% if current_user.is_verified_seller %}
+          <div class="status-card verified" style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; padding: 1.5rem;">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+              <div style="font-size: 2rem;">✅</div>
+              <div>
+                <h3 style="margin: 0; color: #155724;">Stripe Account Connected</h3>
+                <p style="margin: 0.5rem 0 0 0; color: #155724;">You're ready to receive payments from buyers!</p>
+              </div>
+            </div>
+            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #c3e6cb;">
+              <small style="color: #155724;">
+                <strong>Account ID:</strong> {{ current_user.stripe_account_id[:12] }}...
+              </small>
+            </div>
+          </div>
+        {% else %}
+          <div class="status-card unverified" style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 1.5rem;">
+            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+              <div style="font-size: 2rem;">⚠️</div>
+              <div>
+                <h3 style="margin: 0; color: #856404;">Connect Your Stripe Account</h3>
+                <p style="margin: 0.5rem 0 0 0; color: #856404;">Start receiving payments by connecting your Stripe account</p>
+              </div>
+            </div>
+            
+            <div style="margin-bottom: 1rem;">
+              <h4 style="color: #856404; margin-bottom: 0.5rem;">Why connect Stripe?</h4>
+              <ul style="margin: 0; padding-left: 1.5rem; color: #856404;">
+                <li>Receive payments securely when buyers fund requests</li>
+                <li>Get paid automatically when work is approved</li>
+                <li>Access to RevMark's escrow protection system</li>
+                <li>Professional payment processing and invoicing</li>
+              </ul>
+            </div>
+            
+            <button id="connect-stripe" class="btn btn-primary" style="width: 100%; padding: 1rem;">
+              🔗 Connect with Stripe
+            </button>
+            
+            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #ffeaa7;">
+              <small style="color: #856404;">
+                ℹ️ <strong>Safe & Secure:</strong> Your banking information is handled directly by Stripe. 
+                RevMark never sees or stores your banking details.
+              </small>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Seller Stats -->
+      <div class="seller-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+        <div class="stat-card" style="background: white; border-radius: 8px; padding: 1.5rem; text-align: center; border: 1px solid #e9ecef;">
+          <div style="font-size: 2rem; margin-bottom: 0.5rem;">📊</div>
+          <h3 style="margin: 0; font-size: 1.5rem; color: #333;">{{ requests|length }}</h3>
+          <p style="margin: 0.5rem 0 0 0; color: #666;">Active Requests</p>
+        </div>
+        
+        <div class="stat-card" style="background: white; border-radius: 8px; padding: 1.5rem; text-align: center; border: 1px solid #e9ecef;">
+          <div style="font-size: 2rem; margin-bottom: 0.5rem;">💰</div>
+          <h3 style="margin: 0; font-size: 1.5rem; color: #333;">$0.00</h3>
+          <p style="margin: 0.5rem 0 0 0; color: #666;">Total Earnings</p>
+        </div>
+        
+        <div class="stat-card" style="background: white; border-radius: 8px; padding: 1.5rem; text-align: center; border: 1px solid #e9ecef;">
+          <div style="font-size: 2rem; margin-bottom: 0.5rem;">⭐</div>
+          <h3 style="margin: 0; font-size: 1.5rem; color: #333;">5.0</h3>
+          <p style="margin: 0.5rem 0 0 0; color: #666;">Average Rating</p>
+        </div>
+        
+        <div class="stat-card" style="background: white; border-radius: 8px; padding: 1.5rem; text-align: center; border: 1px solid #e9ecef;">
+          <div style="font-size: 2rem; margin-bottom: 0.5rem;">🎯</div>
+          <h3 style="margin: 0; font-size: 1.5rem; color: #333;">0</h3>
+          <p style="margin: 0.5rem 0 0 0; color: #666;">Completed Jobs</p>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="quick-actions" style="margin-bottom: 2rem;">
+        <h3>Quick Actions</h3>
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+          <a href="{{ url_for('main.browse_requests') }}" class="btn btn-primary">
+            🔍 Browse Requests
+          </a>
+          <a href="{{ url_for('main.inbox') }}" class="btn btn-outline">
+            💬 Messages {% if current_user.unread_message_count() > 0 %}({{ current_user.unread_message_count() }}){% endif %}
+          </a>
+          <a href="{{ url_for('main.post_request') }}" class="btn btn-outline">
+            📝 Post Request
+          </a>
+        </div>
       </div>
     </div>
   </div>
@@ -227,6 +337,23 @@
 
 .tab-content.active {
   display: block;
+}
+
+.status-indicator {
+  font-size: 0.8rem;
+  padding: 2px 6px;
+  border-radius: 10px;
+  margin-left: 4px;
+}
+
+.status-indicator.verified {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-indicator.pending {
+  background: #fff3cd;
+  color: #856404;
 }
 
 /* Profile Tab */
@@ -501,8 +628,20 @@ function showTab(tabName) {
   
   // Show selected tab
   document.getElementById(tabName).classList.add('active');
-  event.target.classList.add('active');
+  
+  // Find and activate the corresponding tab button
+  document.querySelectorAll('.tab-button').forEach(function(button) {
+    if (button.getAttribute('onclick') === `showTab('${tabName}')`) {
+      button.classList.add('active');
+    }
+  });
 }
+
+// Initialize the correct tab on page load
+document.addEventListener('DOMContentLoaded', function() {
+  const activeTab = '{{ active_tab }}' || 'profile';
+  showTab(activeTab);
+});
 
 function confirmDelete(requestId, title) {
   document.getElementById('postTitle').textContent = title;
@@ -512,6 +651,44 @@ function confirmDelete(requestId, title) {
 
 function closeDeleteModal() {
   document.getElementById('deleteModal').style.display = 'none';
+}
+
+// Stripe Connect functionality
+const connectButton = document.getElementById('connect-stripe');
+
+if (connectButton) {
+    connectButton.addEventListener('click', async function() {
+        try {
+            // Disable button and show loading state
+            connectButton.disabled = true;
+            connectButton.innerHTML = '🔄 Connecting...';
+            
+            // Create onboarding link
+            const response = await fetch('/stripe/onboard', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Redirect to Stripe onboarding
+                window.location.href = data.url;
+            } else {
+                throw new Error(data.error || 'Failed to create onboarding link');
+            }
+            
+        } catch (error) {
+            console.error('Stripe onboarding error:', error);
+            alert('Error connecting to Stripe: ' + error.message);
+            
+            // Re-enable button
+            connectButton.disabled = false;
+            connectButton.innerHTML = '🔗 Connect with Stripe';
+        }
+    });
 }
 </script>
 {% endblock %}

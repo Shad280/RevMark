@@ -1,5 +1,18 @@
 {% extends "base.html" %}
 {% block content %}
+<style>
+.message-sender {
+  background: #2d8f3f;
+  color: white;
+  margin-left: 2rem;
+  text-align: right;
+}
+.message-receiver {
+  background: #f8f9fa;
+  margin-right: 2rem;
+}
+</style>
+
 <div class="dashboard">
   <div class="dashboard-header">
     <h1>Chat with {{ receiver.username }}</h1>
@@ -9,8 +22,24 @@
   <div class="chat-container" style="background: white; border-radius: 8px; padding: 2rem; margin-bottom: 2rem;">
     <div class="messages-thread" style="max-height: 400px; overflow-y: auto; margin-bottom: 2rem;">
       {% for m in thread %}
-        <div class="message-item" style="margin-bottom: 1rem; padding: 1rem; border-radius: 6px; {% if m.sender.id == current_user.id %}background: #2d8f3f; color: white; margin-left: 2rem; text-align: right;{% else %}background: #f8f9fa; margin-right: 2rem;{% endif %}">
+        <div class="message-item {% if m.sender.id == current_user.id %}message-sender{% else %}message-receiver{% endif %}" style="margin-bottom: 1rem; padding: 1rem; border-radius: 6px;">
           <div><strong>{{ m.sender.username }}:</strong> {{ m.body }}</div>
+          
+          {% if m.attachments %}
+            <div class="message-attachments" style="margin-top: 0.5rem;">
+              {% for attachment in m.attachments %}
+                <div class="attachment-item" style="display: inline-block; margin: 0.25rem; padding: 0.5rem; background: rgba(255,255,255,0.1); border-radius: 4px;">
+                  <a href="{{ url_for('api.download_file', attachment_id=attachment.id) }}" 
+                     target="_blank" 
+                     style="color: inherit; text-decoration: none;">
+                    📎 {{ attachment.original_filename }}
+                    <small style="display: block; opacity: 0.8;">{{ "%.1f"|format(attachment.file_size/1024) }} KB</small>
+                  </a>
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+          
           <small style="opacity: 0.7;">{{ m.timestamp.strftime('%m/%d %H:%M') }}</small>
         </div>
       {% else %}
@@ -18,8 +47,20 @@
       {% endfor %}
     </div>
     
-    <form method="POST" style="max-width: none; margin: 0; padding: 0; box-shadow: none;">
+    <form method="POST" enctype="multipart/form-data" style="max-width: none; margin: 0; padding: 0; box-shadow: none;">
       <textarea name="body" placeholder="Type your message..." required rows="3" style="margin-bottom: 1rem;"></textarea>
+      
+      <div style="margin-bottom: 1rem;">
+        <label for="attachments" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Attach Files (optional):</label>
+        <input type="file" 
+               name="attachments" 
+               id="attachments" 
+               multiple 
+               accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx"
+               style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+        <small style="color: #666;">Supported: JPG, PNG, GIF, PDF, DOC, DOCX (Max 16MB per file)</small>
+      </div>
+      
       <button type="submit" class="btn btn-primary">Send Message</button>
     </form>
   </div>
@@ -32,6 +73,16 @@ document.addEventListener('DOMContentLoaded', function() {
   if (messageThread) {
     messageThread.scrollTop = messageThread.scrollHeight;
   }
+  
+  // File upload preview
+  const fileInput = document.getElementById('attachments');
+  fileInput.addEventListener('change', function() {
+    const files = Array.from(this.files);
+    if (files.length > 0) {
+      const fileNames = files.map(file => file.name).join(', ');
+      console.log('Files selected:', fileNames);
+    }
+  });
 });
 </script>
 {% endblock %}

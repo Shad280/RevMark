@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="dashboard">
+  <div class="dashboard-header">
+    <h1>Fund Request: {{ request.title }}</h1>
+    <a href="{{ url_for('main.view_request', request_id=request.id) }}" class="btn btn-outline">← Back to Request</a>
+  </div>
+  
+  <div class="payment-container" style="background: white; border-radius: 8px; padding: 2rem; margin-bottom: 2rem; max-width: 600px;">
+    <div class="request-summary" style="margin-bottom: 2rem; padding: 1rem; background: #f8f9fa; border-radius: 6px;">
+      <h3>{{ request.title }}</h3>
+      <p style="color: #666;">{{ request.description[:200] }}{% if request.description|length > 200 %}...{% endif %}</p>
+      <div style="margin-top: 1rem;">
+        <strong>Buyer:</strong> {{ request.buyer.username }}<br>
+        {% if request.seller %}
+          <strong>Seller:</strong> {{ request.seller.username }}<br>
+        {% endif %}
+        <strong>Budget:</strong> ${{ "%.2f"|format(request.budget) if request.budget else "Not specified" }}
+      </div>
+    </div>
+
+    {% if request.status == 'open' %}
+      <div class="payment-form">
+        <h3>🔒 Secure Escrow Payment</h3>
+        <p style="margin-bottom: 2rem; color: #666;">
+          Your payment will be held securely until the work is completed and approved. 
+          RevMark charges a {{ platform_fee }}% platform fee.
+        </p>
+
+        <form id="payment-form" style="max-width: none; margin: 0; padding: 0; box-shadow: none;">
+          <div style="margin-bottom: 1rem;">
+            <label for="amount" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Payment Amount ($):</label>
+            <input type="number" 
+                   id="amount" 
+                   name="amount" 
+                   step="0.01" 
+                   min="1" 
+                   max="10000"
+                   value="{{ request.budget if request.budget else '' }}"
+                   required 
+                   style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem;">
+          </div>
+
+          {% if seller %}
+            <input type="hidden" id="seller_id" value="{{ seller.id }}">
+            <div style="margin-bottom: 1rem; padding: 1rem; background: #e8f5e8; border-radius: 6px;">
+              <strong>💼 Assigned Seller:</strong> {{ seller.username }}
+            </div>
+          {% endif %}
+
+          <div id="payment-breakdown" style="margin-bottom: 1.5rem; padding: 1rem; background: #f8f9fa; border-radius: 6px; display: none;">
+            <h4 style="margin-bottom: 1rem;">Payment Breakdown:</h4>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+              <span>Payment Amount:</span>
+              <span id="breakdown-amount">$0.00</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; color: #666;">
+              <span>Platform Fee ({{ platform_fee }}%):</span>
+              <span id="breakdown-fee">$0.00</span>
+            </div>
+            <hr style="margin: 0.5rem 0;">
+            <div style="display: flex; justify-content: space-between; font-weight: bold;">
+              <span>Total to Pay:</span>
+              <span id="breakdown-total">$0.00</span>
+            </div>
+          </div>
+
+          <!-- Stripe Elements will be inserted here -->
+          <div id="card-element" style="margin-bottom: 1rem; padding: 1rem; border: 1px solid #ddd; border-radius: 4px;">
+            <!-- Stripe Elements will create form elements here -->
+          </div>
+          <div id="card-errors" role="alert" style="color: #dc3545; margin-bottom: 1rem;"></div>
+
+          <button id="submit-payment" 
+                  type="submit" 
+                  class="btn btn-primary" 
+                  style="width: 100%; padding: 1rem; font-size: 1.1rem;"
+                  disabled>
+            🔒 Fund Request Securely
+          </button>
+        </form>
+
+        <div style="margin-top: 2rem; padding: 1rem; background: #fff3cd; border-radius: 6px; border-left: 4px solid #ffc107;">
+          <h4 style="margin-bottom: 1rem;">🛡️ How Escrow Works:</h4>
+          <ol style="margin: 0; padding-left: 1.5rem;">
+            <li>Your payment is held securely by RevMark</li>
+            <li>The seller completes the work</li>
+            <li>You review and approve the completed work</li>
+            <li>Payment is released to the seller (minus platform fee)</li>
+            <li>If unsatisfied, you can request a refund</li>
+          </ol>
+        </div>
+      </div>
+
+    {% elif request.status == 'funded' %}
+      <div class="payment-status" style="text-align: center; padding: 2rem;">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">✅</div>
+        <h3 style="color: #28a745;">Request Successfully Funded!</h3>
+        <p style="color: #666; margin-bottom: 2rem;">
+          Your payment of ${{ "%.2f"|format(request.escrow_amount) }} is held securely in escrow.
+        </p>
+        
+        <div style="margin-bottom: 2rem; padding: 1rem; background: #f8f9fa; border-radius: 6px;">
+          <h4>Next Steps:</h4>
+          <p>The seller will now begin work on your request. You can communicate through the messaging system and track progress.</p>
+        </div>
+
+        <div style="display: flex; gap: 1rem; justify-content: center;">
+          <a href="{{ url_for('main.message', receiver_id=request.seller_id) if request.seller_id else '#' }}" 
+             class="btn btn-primary">💬 Message Seller</a>
+          <button onclick="releasePayment()" class="btn btn-success">✅ Approve & Release Payment</button>
+          <button onclick="requestRefund()" class="btn btn-outline" style="color: #dc3545; border-color: #dc3545;">🔄 Request Refund</button>
+        </div>
+      </div>
+
+    {% elif request.status == 'completed' %}
+      <div class="payment-status" style="text-align: center; padding: 2rem;">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">🎉</div>
+        <h3 style="color: #28a745;">Request Completed!</h3>
+        <p style="color: #666;">
+          Payment has been released to the seller. Thank you for using RevMark!
+        </p>
+      </div>
+
+    {% else %}
+      <div class="payment-status" style="text-align: center; padding: 2rem;">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">ℹ️</div>
+        <h3>Request Status: {{ request.status.title() }}</h3>
+        <p style="color: #666;">This request is not available for payment at this time.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Include Stripe.js -->
+<script src="https://js.stripe.com/v3/"></script>
+
+<!-- Payment form variables -->
+<script type="text/javascript">
+window.paymentConfig = {
+  stripePublicKey: "{{ stripe_public_key }}",
+  platformFee: parseFloat("{{ platform_fee }}"),
+  requestId: parseInt("{{ request.id }}")
+};
+</script>
+
+<!-- Payment handling script -->
+<script type="text/javascript" src="{{ url_for('static', filename='js/payment.js') }}"></script>
+{% endblock %}
