@@ -1,5 +1,6 @@
 import boto3
 import os
+import time
 import uuid
 from werkzeug.utils import secure_filename
 from flask import current_app
@@ -79,7 +80,7 @@ class S3Manager:
                     'ContentType': file.content_type or 'application/octet-stream',
                     'Metadata': {
                         'original_filename': original_filename,
-                        'upload_timestamp': str(int(os.time()))
+                        'upload_timestamp': str(int(time.time()))
                     }
                 }
             )
