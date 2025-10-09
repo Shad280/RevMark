@@ -4,7 +4,7 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-  "startCommand": "sh -lc \"printenv && python -u app.py\"",
+  "startCommand": "python -u start_probe.py",
   "healthcheckPath": "/__status",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
