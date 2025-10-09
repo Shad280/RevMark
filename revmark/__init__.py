@@ -57,5 +57,11 @@ def create_app():
                 db.create_all()
             except Exception as e:
                 app.logger.error(f"Could not create database tables: {e}")
+
+    # Lightweight health endpoint for platform healthchecks
+    @app.route('/__status')
+    def __status():
+        # Keep this minimal and fast: return 200 if the app process is up.
+        return {"status": "ok"}, 200
     
     return app
