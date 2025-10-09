@@ -13,7 +13,20 @@ try:
     # 🔍 DEBUG: Check what Railway is providing
     print("=" * 60)
     print("🚂 RAILWAY POSTGRESQL DEBUG INFO:")
-    print("DATABASE_URL:", os.getenv("DATABASE_URL"))
+    # Mask full DATABASE_URL to avoid leaking credentials in logs; show host and db only
+    db_url = os.getenv("DATABASE_URL")
+    if db_url:
+        try:
+            from urllib.parse import urlparse
+            p = urlparse(db_url)
+            host = p.hostname or ''
+            port = f":{p.port}" if p.port else ''
+            path = p.path or ''
+            print("DATABASE_URL:", f"{p.scheme}://{host}{port}{path}")
+        except Exception:
+            print("DATABASE_URL: [REDACTED]")
+    else:
+        print("DATABASE_URL: None")
     print("DATABASE_PUBLIC_URL:", os.getenv("DATABASE_PUBLIC_URL"))
     print("RAILWAY_ENVIRONMENT:", os.getenv("RAILWAY_ENVIRONMENT"))
     print("RAILWAY_PRIVATE_DOMAIN:", os.getenv("RAILWAY_PRIVATE_DOMAIN"))
