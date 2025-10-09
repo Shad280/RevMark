@@ -5,6 +5,7 @@ from flask_caching import Cache
 from config import Config
 from scaling_config import ScalingConfig
 import os
+from urllib.parse import urlparse, urlunparse
 
 db = SQLAlchemy()
 login_manager = LoginManager()
@@ -16,8 +17,21 @@ def create_app():
     app.config.from_object(Config)
     app.config.from_object(ScalingConfig)
     
-    # 🔍 CRITICAL DEBUG: What URI is SQLAlchemy actually getting?
-    print(f"🔍 SQLAlchemy will use: {app.config.get('SQLALCHEMY_DATABASE_URI', 'NOT_SET')}")
+    # 🔍 CRITICAL DEBUG: Log a masked SQLAlchemy URI (do NOT print credentials)
+    raw_uri = app.config.get('SQLALCHEMY_DATABASE_URI')
+    if raw_uri:
+        try:
+            parsed = urlparse(raw_uri)
+            # Build a netloc without username/password
+            netloc = parsed.hostname or ''
+            if parsed.port:
+                netloc = f"{netloc}:{parsed.port}"
+            masked = urlunparse((parsed.scheme, netloc, parsed.path or '', '', '', ''))
+            app.logger.info(f"🔍 SQLAlchemy will use: {masked}")
+        except Exception:
+            app.logger.info("🔍 SQLAlchemy will use: [REDACTED]")
+    else:
+        app.logger.info("🔍 SQLAlchemy will use: NOT_SET")
     
     # Initialize extensions
     db.init_app(app)

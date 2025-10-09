@@ -4,7 +4,7 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-  "startCommand": "python -u start_probe.py",
+  "startCommand": "gunicorn --bind 0.0.0.0:$PORT app:app --log-level info --access-logfile - --error-logfile -",
   "healthcheckPath": "/__status",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",

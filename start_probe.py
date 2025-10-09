@@ -10,7 +10,7 @@ def dump_env():
     print("\n=== ENVIRONMENT DUMP ===")
     for k in sorted(os.environ.keys()):
         # hide obvious secrets
-        if 'KEY' in k or 'SECRET' in k or 'PASSWORD' in k:
+        if (k == 'DATABASE_URL') or ('KEY' in k) or ('SECRET' in k) or ('PASSWORD' in k):
             print(f"{k}=***")
         else:
             print(f"{k}={os.environ.get(k)}")
