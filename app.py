@@ -1,4 +1,3 @@
-from revmark import create_app
 import os
 import traceback
 from flask import Flask
@@ -9,6 +8,8 @@ from flask import Flask
 # deployment. The fallback makes the instance reachable while you inspect
 # runtime logs and fix the root cause.
 try:
+    # Delay importing create_app until inside try so import-time exceptions
+    # are caught and the fallback can start.
     # 🔍 DEBUG: Check what Railway is providing
     print("=" * 60)
     print("🚂 RAILWAY POSTGRESQL DEBUG INFO:")
@@ -26,6 +27,7 @@ try:
     print("POSTGRES_PASSWORD:", '***' if os.getenv("POSTGRES_PASSWORD") else None)
     print("=" * 60)
 
+    from revmark import create_app
     app = create_app()
 except Exception as e:
     # Print traceback to make debugging easier in Railway logs
