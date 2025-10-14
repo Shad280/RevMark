@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, current_app
 from flask_login import login_required, current_user
 from revmark import db
 from revmark.models import Message, MessageAttachment, Request, User, EscrowPayment
+from revmark.utils.email_utils import send_email
 from revmark.s3_utils import s3_manager
 from revmark.stripe_utils import stripe_manager
 import logging
@@ -171,6 +172,16 @@ def create_payment_intent():
             amount=amount,
             seller_id=seller_id
         )
+        # Notify seller if an offer was made (seller_id provided)
+        try:
+            if seller_id:
+                seller = User.query.get(seller_id)
+                if seller and seller.email:
+                    subject = f"Your offer was selected for request #{request_id}" 
+                    body = f"Good news! The buyer has created a payment for Request #{request_id}.\n\nAmount: ${amount:.2f}\n\nLog in to RevMark to view details and message the buyer."
+                    send_email(subject, [seller.email], body)
+        except Exception:
+            logger.exception("Failed to send offer-made email to seller")
         
         return jsonify({
             "success": True,
@@ -215,6 +226,17 @@ def release_payment():
             request_obj.stripe_payment_intent_id,
             seller.stripe_account_id
         )
+
+        # Notify buyer and seller about completion
+        try:
+            buyer = User.query.get(request_obj.buyer_id) if request_obj else None
+            seller = User.query.get(request_obj.seller_id) if request_obj and request_obj.seller_id else None
+            if buyer and buyer.email:
+                send_email(f"Payment released for Request #{request_id}", [buyer.email], f"Your payment for Request #{request_id} has been released to the seller.")
+            if seller and seller.email:
+                send_email(f"You received payment for Request #{request_id}", [seller.email], f"A payment for Request #{request_id} has been released to your account. Amount: ${transfer_info['amount_transferred']:.2f}")
+        except Exception:
+            logger.exception("Failed to send payment released emails")
         
         return jsonify({
             "success": True,

@@ -3,6 +3,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from revmark import db, cache
+from revmark.utils.email_utils import send_email
 from revmark.models import User, Request, Message, MessageAttachment, EscrowPayment
 
 bp = Blueprint("main", __name__)
@@ -27,14 +28,18 @@ def contact():
         email = request.form.get("email")
         subject = request.form.get("subject")
         message = request.form.get("message")
-        
-        # For now, just flash a success message
-        # Later we'll add email sending functionality
-        flash(f"Thank you {name}! Your message has been received. We'll get back to you at {email} soon.", "success")
+
+        # Send email to site admin (change recipient as needed)
+        admin_email = current_app.config.get("MAIL_DEFAULT_SENDER", (None, "admin@example.com"))[1]
+        body = f"Contact form submission from {name} <{email}>\n\nSubject: {subject}\n\nMessage:\n{message}"
+        try:
+            send_email(f"[RevMark Contact] {subject}", [admin_email], body)
+            flash(f"Thank you {name}! Your message has been sent. We'll get back to you at {email} soon.", "success")
+        except Exception as e:
+            flash(f"Sorry, there was an error sending your message. Please try again later.", "danger")
         return redirect(url_for("main.contact"))
-    
+
     return render_template("contact.html")
-    return render_template("about.html")
 
 # ---------- AUTH ----------
 @bp.route("/signup", methods=["GET", "POST"])
@@ -175,6 +180,15 @@ def message(receiver_id):
                         flash(f"Failed to upload {file.filename}: File upload service unavailable", "warning")
         
         db.session.commit()
+        # Send email notification to receiver
+        try:
+            recipient = receiver.email
+            subject = f"New message from {current_user.username} on RevMark"
+            body = f"You have a new message from {current_user.username}:\n\n{body}\n\nView the conversation in your RevMark inbox."
+            send_email(subject, [recipient], body)
+        except Exception:
+            current_app.logger.exception("Failed to send message notification email")
+
         flash("Message sent!", "success")
         return redirect(url_for("main.message", receiver_id=receiver.id))
 
@@ -404,6 +418,22 @@ def stripe_onboard_refresh():
     """Handle Stripe onboarding refresh/retry"""
     flash("Let's try connecting your Stripe account again.", "info")
     return redirect(url_for('main.seller_dashboard'))
+
+
+@bp.route('/admin/test-email')
+@login_required
+def admin_test_email():
+    """Send a test email to the current user to verify SMTP is working."""
+    try:
+        recipient = current_user.email
+        subject = "RevMark test email"
+        body = f"Hello {current_user.username},\n\nThis is a test email from RevMark to verify outgoing email is configured correctly."
+        send_email(subject, [recipient], body)
+        flash("Test email sent — check your inbox.", "success")
+    except Exception:
+        current_app.logger.exception("Failed to send test email")
+        flash("Failed to send test email. Check logs and SMTP settings.", "danger")
+    return redirect(url_for('main.account'))
 
 @bp.route("/stripe/webhook", methods=["POST"])
 def stripe_webhook():

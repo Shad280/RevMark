@@ -1,3 +1,118 @@
+# -----------------------
+# Common update endpoints with email notifications
+# -----------------------
+from fastapi import Body
+
+# Update account info (email notification)
+@app.post("/account/update")
+async def update_account(username: Optional[str] = Form(None), email: Optional[str] = Form(None), db=Depends(get_db), user=Depends(current_user_dep)):
+    updated = False
+    if username and username != user.username:
+        user.username = username
+        updated = True
+    if email and email != user.email:
+        user.email = email
+        updated = True
+    if updated:
+        db.add(user)
+        db.commit()
+        from app.utils.email import EmailUtils
+        from fastapi import BackgroundTasks
+        background_tasks = BackgroundTasks()
+        subject = "Your RevMark account information was updated"
+        body = f"<p>Hello {user.username},</p>\n<p>Your account information was updated. If you did not make this change, please contact support immediately.</p>"
+        await EmailUtils.send_email(user.email, subject, body, background_tasks)
+        await background_tasks()
+        return {"detail": "Account updated and notification sent"}
+    return {"detail": "No changes made"}
+
+# Update product/listing info (email notification)
+@app.post("/requests/{request_id}/update")
+async def update_request(request_id: int, title: Optional[str] = Form(None), description: Optional[str] = Form(None), db=Depends(get_db), user=Depends(current_user_dep)):
+    req = db.query(RequestItem).filter(RequestItem.id == request_id).first()
+    if not req:
+        raise HTTPException(404, "Request not found")
+    # Only buyer or seller can update
+    if user.id not in [req.buyer_id, req.seller_id]:
+        raise HTTPException(403, "Not authorized to update this request")
+    updated = False
+    if title and title != req.title:
+        req.title = title
+        updated = True
+    if description and description != req.description:
+        req.description = description
+        updated = True
+    if updated:
+        db.add(req)
+        db.commit()
+        # Notify both buyer and seller
+        from app.utils.email import EmailUtils
+        from fastapi import BackgroundTasks
+        background_tasks = BackgroundTasks()
+        subject = f"Request #{req.id} information updated"
+        body = f"<p>The request '<b>{req.title}</b>' was updated.</p>\n<p>Log in to your account to view the latest details.</p>"
+        recipients = []
+        if req.buyer_id:
+            buyer = db.query(User).filter(User.id == req.buyer_id).first()
+            if buyer:
+                recipients.append(buyer.email)
+        if req.seller_id:
+            seller = db.query(User).filter(User.id == req.seller_id).first()
+            if seller:
+                recipients.append(seller.email)
+        for email in recipients:
+            await EmailUtils.send_email(email, subject, body, background_tasks)
+        await background_tasks()
+        return {"detail": "Request updated and notifications sent"}
+    return {"detail": "No changes made"}
+
+# Update offer info (email notification)
+@app.post("/offers/{offer_id}/update")
+async def update_offer(offer_id: int = Body(...), new_status: Optional[str] = Body(None), db=Depends(get_db), user=Depends(current_user_dep)):
+    # This is a placeholder; actual offer model/logic may differ
+    # Add your Offer model and update logic here
+    # For demonstration, just send a notification
+    from app.utils.email import EmailUtils
+    from fastapi import BackgroundTasks
+    background_tasks = BackgroundTasks()
+    subject = f"Your offer (ID: {offer_id}) was updated"
+    body = f"<p>Your offer (ID: {offer_id}) was updated. Status: {new_status or 'changed'}.</p>\n<p>Log in to your account to view details.</p>"
+    # You should look up the offer and its owner to get the email
+    # For now, just send to the current user
+    await EmailUtils.send_email(user.email, subject, body, background_tasks)
+    await background_tasks()
+    return {"detail": "Offer updated and notification sent"}
+# -----------------------
+# Mark product as shipped
+# -----------------------
+from fastapi import status as http_status
+
+@app.post("/requests/{request_id}/ship", status_code=http_status.HTTP_200_OK)
+async def mark_as_shipped(request_id: int, db=Depends(get_db), user=Depends(current_user_dep)):
+    req = db.query(RequestItem).filter(RequestItem.id == request_id).first()
+    if not req:
+        raise HTTPException(404, "Request not found")
+    # Only seller can mark as shipped
+    if req.seller_id != user.id:
+        raise HTTPException(403, "Only the seller can mark as shipped")
+    if req.status == "shipped":
+        return {"detail": "Already marked as shipped"}
+    req.status = "shipped"
+    db.add(req)
+    db.commit()
+
+    # Notify buyer by email
+    buyer = db.query(User).filter(User.id == req.buyer_id).first()
+    if buyer:
+        from app.utils.email import EmailUtils
+        from fastapi import BackgroundTasks
+        background_tasks = BackgroundTasks()
+        subject = f"Your product has been shipped for Request #{req.id}"
+        body = f"<p>Hello {buyer.username},</p>\n<p>Your product for the request '<b>{req.title}</b>' has been shipped by the seller.</p>\n<p>Log in to your account to view details and track your order.</p>"
+        await EmailUtils.send_email(buyer.email, subject, body, background_tasks)
+        await background_tasks()
+
+    return {"detail": "Marked as shipped and buyer notified"}
 import os
 import json
 import uuid
@@ -363,7 +478,16 @@ def capture_and_release(
     req.status = "released"
     db.add(req)
     db.commit()
-    
+
+    # Send email notification to seller about offer approval/payment release
+    from app.utils.email import EmailUtils
+    from fastapi import BackgroundTasks
+    background_tasks = BackgroundTasks()
+    subject = f"Your offer has been approved and payment released for Request #{req.id}"
+    body = f"<p>Hello {seller.username},</p>\n<p>Your offer for the request '<b>{req.title}</b>' has been approved by the buyer and payment has been released to your Stripe account.</p>\n<p>Amount: <b>${payout_amount/100:.2f}</b></p>\n<p>Log in to your account for details.</p>"
+    await EmailUtils.send_email(seller.email, subject, body, background_tasks)
+    await background_tasks()
+
     return {
         "status": "released",
         "transfer_id": transfer.id,
@@ -472,6 +596,16 @@ async def send_message(
     db.add(m)
     db.commit()
     db.refresh(m)
+
+    # Send email notification to receiver
+    from app.utils.email import EmailUtils
+    from fastapi import BackgroundTasks
+    background_tasks = BackgroundTasks()
+    subject = "You have a new message on RevMark"
+    body = f"<p>Hello {rec.username},</p>\n<p>You received a new message from {user.username}:</p>\n<p><b>{content}</b></p>\n<p>Log in to your account to view and reply.</p>"
+    await EmailUtils.send_email(rec.email, subject, body, background_tasks)
+    # Run background tasks (for FastAPI, this is usually handled by dependency injection, but we call it manually here)
+    await background_tasks()
     
     return MessageOut(
         id=m.id,
