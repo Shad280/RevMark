@@ -76,7 +76,7 @@
             <h3><a href="{{ url_for('main.view_request', request_id=req.id) }}">{{ req.title }}</a></h3>
             <p class="request-description">{{ req.description[:80] }}{% if req.description|length > 80 %}...{% endif %}</p>
             <div class="request-meta simple">
-              <span class="author">by {{ req.buyer.username }}</span>
+              <span class="author">Buyer</span>
               {% if req.budget %}
                 <span class="budget">${{ "%.0f"|format(req.budget) }}</span>
               {% endif %}

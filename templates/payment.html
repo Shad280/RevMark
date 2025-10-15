@@ -11,9 +11,9 @@
       <h3>{{ request.title }}</h3>
       <p style="color: #666;">{{ request.description[:200] }}{% if request.description|length > 200 %}...{% endif %}</p>
       <div style="margin-top: 1rem;">
-        <strong>Buyer:</strong> {{ request.buyer.username }}<br>
+  <strong>Buyer</strong><br>
         {% if request.seller %}
-          <strong>Seller:</strong> {{ request.seller.username }}<br>
+          <strong>Seller</strong><br>
         {% endif %}
         <strong>Budget:</strong> ${{ "%.2f"|format(request.budget) if request.budget else "Not specified" }}
       </div>
@@ -44,7 +44,7 @@
           {% if seller %}
             <input type="hidden" id="seller_id" value="{{ seller.id }}">
             <div style="margin-bottom: 1rem; padding: 1rem; background: #e8f5e8; border-radius: 6px;">
-              <strong>💼 Assigned Seller:</strong> {{ seller.username }}
+              <strong>💼 Assigned Seller</strong>
             </div>
           {% endif %}
 
