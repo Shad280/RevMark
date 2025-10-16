@@ -29,12 +29,19 @@
             <div class="message-attachments" style="margin-top: 0.5rem;">
               {% for attachment in m.attachments %}
                 <div class="attachment-item" style="display: inline-block; margin: 0.25rem; padding: 0.5rem; background: rgba(255,255,255,0.1); border-radius: 4px;">
-                  <a href="{{ url_for('api.download_file', attachment_id=attachment.id) }}" 
-                     target="_blank" 
-                     style="color: inherit; text-decoration: none;">
+                  {% if attachment.is_image and attachment.download_url %}
+                    <a href="{{ attachment.download_url }}" target="_blank">
+                      <img src="{{ attachment.download_url }}" alt="{{ attachment.original_filename }}" style="max-width: 200px; max-height: 200px; display: block;">
+                    </a>
+                  {% elif attachment.download_url %}
+                    <a href="{{ attachment.download_url }}" target="_blank">
+                      📎 {{ attachment.original_filename }}
+                      <small style="display: block; opacity: 0.8;">{{ "%.1f"|format(attachment.file_size/1024) }} KB</small>
+                    </a>
+                  {% else %}
                     📎 {{ attachment.original_filename }}
                     <small style="display: block; opacity: 0.8;">{{ "%.1f"|format(attachment.file_size/1024) }} KB</small>
-                  </a>
+                  {% endif %}
                 </div>
               {% endfor %}
             </div>

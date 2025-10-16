@@ -1,7 +1,135 @@
+
 # -----------------------
-# Common update endpoints with email notifications
+# Imports and App Setup
 # -----------------------
-from fastapi import Body
+import os
+import json
+import uuid
+from decimal import Decimal
+from typing import Optional, List
+from datetime import datetime, timedelta
+from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form, Request, Body, status as http_status
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, create_engine
+from sqlalchemy.orm import relationship, sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
+import stripe
+from passlib.context import CryptContext
+from jose import jwt
+from jose.exceptions import JWTError
+from dotenv import load_dotenv
+load_dotenv()
+
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./escrow.db")
+JWT_SECRET = os.getenv("JWT_SECRET", "dev_jwt_secret_change_me")
+JWT_ALG = "HS256"
+JWT_EXPIRE_MINUTES = 60*24*7
+
+STRIPE_API_KEY = os.getenv("STRIPE_API_KEY")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
+PLATFORM_FEE_PERCENT = int(os.getenv("PLATFORM_FEE_PERCENT", "5"))
+
+if not STRIPE_API_KEY:
+    print("WARNING: STRIPE_API_KEY not set. Please set it in your .env file")
+else:
+    stripe.api_key = STRIPE_API_KEY
+
+engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {})
+SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
+Base = declarative_base()
+
+pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, index=True, nullable=False)
+    email = Column(String, unique=True, index=True, nullable=False)
+    hashed_password = Column(String, nullable=False)
+    stripe_account_id = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class RequestItem(Base):
+    __tablename__ = "requests"
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    budget = Column(Integer, nullable=False)  # cents
+    buyer_id = Column(Integer, ForeignKey("users.id"))
+    seller_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    payment_intent_id = Column(String, nullable=True)
+    status = Column(String, default="pending")  # pending, funded, captured, released, refunded
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class Message(Base):
+    __tablename__ = "messages"
+    id = Column(Integer, primary_key=True, index=True)
+    sender_id = Column(Integer, ForeignKey("users.id"))
+    receiver_id = Column(Integer, ForeignKey("users.id"))
+    content = Column(Text, nullable=True)
+    attachment = Column(String, nullable=True)
+    is_read = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+Base.metadata.create_all(bind=engine)
+
+def hash_password(password: str) -> str:
+    return pwd_ctx.hash(password)
+
+def verify_password(password: str, hashed: str) -> bool:
+    return pwd_ctx.verify(password, hashed)
+
+def create_token(user_id: int, username: str):
+    expire = datetime.utcnow() + timedelta(minutes=JWT_EXPIRE_MINUTES)
+    payload = {"sub": username, "uid": user_id, "exp": expire.timestamp()}
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALG)
+
+def get_current_user(authorization: Optional[str] = None, db = None):
+    if authorization is None:
+        raise HTTPException(401, "Missing Authorization header")
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(401, "Invalid Authorization header format")
+    token = authorization.split(" ", 1)[1]
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
+    except JWTError:
+        raise HTTPException(401, "Invalid token")
+    username = payload.get("sub")
+    uid = payload.get("uid")
+    if not uid or not username:
+        raise HTTPException(401, "Invalid token payload")
+    user = db.query(User).filter(User.id == int(uid)).first()
+    if not user:
+        raise HTTPException(401, "User not found")
+    return user
+
+def current_user_dep(authorization: Optional[str] = None, db=Depends(get_db)):
+    return get_current_user(authorization, db)
+
+app = FastAPI(title="RevMark Escrow + Messaging API", version="1.0.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+
 
 # Update account info (email notification)
 @app.post("/account/update")
@@ -21,8 +149,7 @@ async def update_account(username: Optional[str] = Form(None), email: Optional[s
         background_tasks = BackgroundTasks()
         subject = "Your RevMark account information was updated"
         body = f"<p>Hello {user.username},</p>\n<p>Your account information was updated. If you did not make this change, please contact support immediately.</p>"
-        await EmailUtils.send_email(user.email, subject, body, background_tasks)
-        await background_tasks()
+        EmailUtils.send_email(user.email, subject, body, background_tasks)
         return {"detail": "Account updated and notification sent"}
     return {"detail": "No changes made"}
 
@@ -61,8 +188,7 @@ async def update_request(request_id: int, title: Optional[str] = Form(None), des
             if seller:
                 recipients.append(seller.email)
         for email in recipients:
-            await EmailUtils.send_email(email, subject, body, background_tasks)
-        await background_tasks()
+            EmailUtils.send_email(email, subject, body, background_tasks)
         return {"detail": "Request updated and notifications sent"}
     return {"detail": "No changes made"}
 
@@ -79,8 +205,7 @@ async def update_offer(offer_id: int = Body(...), new_status: Optional[str] = Bo
     body = f"<p>Your offer (ID: {offer_id}) was updated. Status: {new_status or 'changed'}.</p>\n<p>Log in to your account to view details.</p>"
     # You should look up the offer and its owner to get the email
     # For now, just send to the current user
-    await EmailUtils.send_email(user.email, subject, body, background_tasks)
-    await background_tasks()
+    EmailUtils.send_email(user.email, subject, body, background_tasks)
     return {"detail": "Offer updated and notification sent"}
 # -----------------------
 # Mark product as shipped
@@ -109,8 +234,7 @@ async def mark_as_shipped(request_id: int, db=Depends(get_db), user=Depends(curr
         background_tasks = BackgroundTasks()
         subject = f"Your product has been shipped for Request #{req.id}"
         body = f"<p>Hello {buyer.username},</p>\n<p>Your product for the request '<b>{req.title}</b>' has been shipped by the seller.</p>\n<p>Log in to your account to view details and track your order.</p>"
-        await EmailUtils.send_email(buyer.email, subject, body, background_tasks)
-        await background_tasks()
+        EmailUtils.send_email(buyer.email, subject, body, background_tasks)
 
     return {"detail": "Marked as shipped and buyer notified"}
 import os
@@ -485,8 +609,7 @@ def capture_and_release(
     background_tasks = BackgroundTasks()
     subject = f"Your offer has been approved and payment released for Request #{req.id}"
     body = f"<p>Hello {seller.username},</p>\n<p>Your offer for the request '<b>{req.title}</b>' has been approved by the buyer and payment has been released to your Stripe account.</p>\n<p>Amount: <b>${payout_amount/100:.2f}</b></p>\n<p>Log in to your account for details.</p>"
-    await EmailUtils.send_email(seller.email, subject, body, background_tasks)
-    await background_tasks()
+    EmailUtils.send_email(seller.email, subject, body, background_tasks)
 
     return {
         "status": "released",

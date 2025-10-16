@@ -198,6 +198,19 @@ def message(receiver_id):
         ((Message.sender_id == receiver.id) & (Message.receiver_id == current_user.id))
     ).order_by(Message.timestamp.asc()).all()
 
+    # Add presigned URL and is_image to each attachment
+    from revmark.s3_utils import s3_manager
+    def is_image_type(content_type):
+        return content_type and content_type.startswith("image/")
+
+    for m in thread:
+        for attachment in m.attachments:
+            try:
+                attachment.download_url = s3_manager.generate_presigned_url(attachment.s3_key)
+            except Exception:
+                attachment.download_url = None
+            attachment.is_image = is_image_type(attachment.content_type)
+
     return render_template("thread.html", receiver=receiver, thread=thread)
 
 
