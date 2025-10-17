@@ -522,3 +522,11 @@ def stripe_webhook():
     except Exception as e:
         current_app.logger.error(f"Webhook error: {str(e)}")
         return "Webhook error", 500
+
+@bp.route("/terms")
+def terms():
+    return render_template("terms.html")
+
+@bp.route("/privacy")
+def privacy():
+    return render_template("privacy.html")

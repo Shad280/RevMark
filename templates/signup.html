@@ -6,6 +6,12 @@
   <input type="email" name="email" placeholder="Email" required>
   <input type="password" name="password" placeholder="Password" required>
   <button type="submit" class="btn btn-primary">Create Account</button>
+  <p style="font-size: 0.95em; color: #555; margin-top: 1rem; text-align: center;">
+    By signing up, you agree to our
+    <a href="{{ url_for('main.terms') }}" target="_blank">Terms of Service</a>
+    and
+    <a href="{{ url_for('main.privacy') }}" target="_blank">Privacy Policy</a>.
+  </p>
   <p style="text-align: center; margin-top: 1rem;">
     Already have an account? <a href="{{ url_for('main.login') }}" style="color: #2d8f3f;">Login here</a>
   </p>
