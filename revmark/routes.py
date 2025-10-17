@@ -5,6 +5,7 @@ from datetime import datetime
 from revmark import db, cache
 from revmark.utils.email_utils import send_email
 from revmark.models import User, Request, Message, MessageAttachment, EscrowPayment
+from revmark.stripe_utils import StripeManager
 
 bp = Blueprint("main", __name__)
 
@@ -147,7 +148,8 @@ def message(receiver_id):
 
     if request.method == "POST":
         body = request.form["body"]
-        msg = Message(body=body, sender=current_user, receiver=receiver)
+        is_offer = 'is_offer' in request.form  # Checkbox or hidden input in form for offers
+        msg = Message(body=body, sender=current_user, receiver=receiver, is_offer=is_offer)
         db.session.add(msg)
         db.session.flush()  # Get the message ID
         
@@ -184,12 +186,13 @@ def message(receiver_id):
         try:
             recipient = receiver.email
             subject = f"New message from {current_user.username} on RevMark"
-            body = f"You have a new message from {current_user.username}:\n\n{body}\n\nView the conversation in your RevMark inbox."
-            send_email(subject, [recipient], body)
+            if is_offer:
+                subject = f"New offer from {current_user.username} on RevMark"
+            body_email = f"You have a new message from {current_user.username}:\n\n{body}\n\nView the conversation in your RevMark inbox."
+            send_email(subject, [recipient], body_email)
         except Exception:
             current_app.logger.exception("Failed to send message notification email")
-
-        flash("Message sent!", "success")
+        flash("Message sent!" if not is_offer else "Offer sent!", "success")
         return redirect(url_for("main.message", receiver_id=receiver.id))
 
     # Conversation thread
@@ -530,3 +533,59 @@ def terms():
 @bp.route("/privacy")
 def privacy():
     return render_template("privacy.html")
+
+@bp.route("/approve_offer", methods=["POST"])
+@login_required
+def approve_offer():
+    message_id = request.form.get("message_id")
+    msg = Message.query.get_or_404(message_id)
+    # Only receiver (buyer) can approve
+    if msg.receiver_id != current_user.id or not msg.is_offer or msg.offer_approved or msg.offer_rejected:
+        flash("Invalid offer approval.", "danger")
+        return redirect(url_for("main.message", receiver_id=msg.sender_id))
+    msg.offer_approved = True
+    db.session.commit()
+    # --- Stripe payment release logic ---
+    try:
+        request_obj = Request.query.filter_by(buyer_id=current_user.id, seller_id=msg.sender_id).order_by(Request.timestamp.desc()).first()
+        if not request_obj or not request_obj.stripe_payment_intent_id:
+            flash("No funded request/payment found for this offer.", "danger")
+            return redirect(url_for("main.message", receiver_id=msg.sender_id))
+        seller = User.query.get(msg.sender_id)
+        if not seller or not seller.stripe_account_id:
+            flash("Seller does not have a connected Stripe account.", "danger")
+            return redirect(url_for("main.message", receiver_id=msg.sender_id))
+        stripe_manager = StripeManager()
+        result = stripe_manager.release_payment_to_seller(request_obj.stripe_payment_intent_id, seller.stripe_account_id)
+        flash(f"Offer approved and payment released to seller. Transfer ID: {result['transfer_id']}", "success")
+        # Notify seller by email
+        try:
+            subject = f"Your offer was approved on RevMark"
+            body_email = f"Congratulations! Your offer was approved and payment has been released to your account.\n\nRequest: {request_obj.title}"
+            send_email(subject, [seller.email], body_email)
+        except Exception:
+            current_app.logger.exception("Failed to send offer approval email to seller")
+    except Exception as e:
+        flash(f"Offer approved, but payment release failed: {str(e)}", "warning")
+    return redirect(url_for("main.message", receiver_id=msg.sender_id))
+
+@bp.route("/reject_offer", methods=["POST"])
+@login_required
+def reject_offer():
+    data = request.get_json()
+    message_id = data.get("message_id")
+    msg = Message.query.get_or_404(message_id)
+    # Only receiver (buyer) can reject
+    if msg.receiver_id != current_user.id or not msg.is_offer or msg.offer_approved or msg.offer_rejected:
+        return {"error": "Invalid offer rejection."}, 400
+    msg.offer_rejected = True
+    db.session.commit()
+    # Notify seller by email
+    try:
+        seller = User.query.get(msg.sender_id)
+        subject = f"Your offer was rejected on RevMark"
+        body_email = f"Your offer was rejected by the buyer.\n\nMessage: {msg.body}"
+        send_email(subject, [seller.email], body_email)
+    except Exception:
+        current_app.logger.exception("Failed to send offer rejection email to seller")
+    return {"status": "rejected"}, 200

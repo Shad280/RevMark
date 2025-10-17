@@ -62,10 +62,15 @@ class Message(db.Model):
     sender_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
     receiver_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
     is_read = db.Column(db.Boolean, default=False, nullable=False, index=True)
-    
+
+    # Offer-related fields
+    is_offer = db.Column(db.Boolean, default=False, nullable=False, index=True)
+    offer_approved = db.Column(db.Boolean, default=False, nullable=False, index=True)
+    offer_rejected = db.Column(db.Boolean, default=False, nullable=False, index=True)
+
     # File attachments
     attachments = db.relationship("MessageAttachment", backref="message", lazy=True, cascade="all, delete-orphan")
-    
+
     def mark_as_read(self):
         """Mark this message as read"""
         self.is_read = True

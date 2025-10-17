@@ -47,11 +47,53 @@
             </div>
           {% endif %}
           
+          {# Offer approval UI: Only show to buyer if offer is present and not yet approved/rejected #}
+          {% if m.is_offer and current_user.id == m.receiver_id and not m.offer_approved and not m.offer_rejected %}
+            <div class="offer-actions" style="margin-top: 1rem;">
+              <button type="button" class="btn btn-success" onclick="showApproveModal({{ m.id }})">Approve Offer</button>
+              <button type="button" class="btn btn-danger" onclick="rejectOffer({{ m.id }})">Reject Offer</button>
+            </div>
+          {% elif m.is_offer and m.offer_approved %}
+            <div class="offer-status" style="margin-top: 1rem; color: #2d8f3f; font-weight: bold;">Offer Approved. Payment will be released to the seller.</div>
+          {% elif m.is_offer and m.offer_rejected %}
+            <div class="offer-status" style="margin-top: 1rem; color: #c0392b; font-weight: bold;">Offer Rejected.</div>
+          {% endif %}
           <small style="opacity: 0.7;">{{ m.timestamp.strftime('%m/%d %H:%M') }}</small>
         </div>
       {% else %}
         <p style="text-align: center; color: #666;">No messages yet. Start the conversation!</p>
       {% endfor %}
+    <!-- Approve Offer Modal -->
+    <div id="approveOfferModal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); z-index:1000; align-items:center; justify-content:center;">
+      <div style="background:white; padding:2rem; border-radius:8px; max-width:400px; margin:auto; text-align:center;">
+        <h3>Approve Offer & Release Payment</h3>
+        <p>Are you sure you want to approve this offer? <br>By approving, payment will be released to the seller's account.</p>
+        <form id="approveOfferForm" method="POST" action="{{ url_for('main.approve_offer') }}">
+          <input type="hidden" name="message_id" id="approveOfferMessageId">
+          <button type="submit" class="btn btn-success">Yes, Approve & Pay</button>
+          <button type="button" class="btn btn-secondary" onclick="hideApproveModal()">Cancel</button>
+        </form>
+      </div>
+    </div>
+<script>
+function showApproveModal(messageId) {
+  document.getElementById('approveOfferMessageId').value = messageId;
+  document.getElementById('approveOfferModal').style.display = 'flex';
+}
+function hideApproveModal() {
+  document.getElementById('approveOfferModal').style.display = 'none';
+}
+function rejectOffer(messageId) {
+  if (confirm('Are you sure you want to reject this offer?')) {
+    // Submit a POST request to reject the offer
+    fetch('{{ url_for('main.reject_offer') }}', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}' },
+      body: JSON.stringify({ message_id: messageId })
+    }).then(() => { window.location.reload(); });
+  }
+}
+</script>
     </div>
     
     <form method="POST" enctype="multipart/form-data" style="max-width: none; margin: 0; padding: 0; box-shadow: none;">
