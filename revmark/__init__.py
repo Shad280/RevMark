@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_caching import Cache
 from flask_mail import Mail
+from flask_migrate import Migrate
 from config import Config
 from scaling_config import ScalingConfig
 import os
@@ -13,6 +14,7 @@ login_manager = LoginManager()
 login_manager.login_view = "login"
 cache = Cache()
 mail = Mail()
+migrate = Migrate()
 
 def create_app():
     app = Flask(__name__, template_folder='../templates', static_folder='../static')
@@ -40,6 +42,7 @@ def create_app():
     login_manager.init_app(app)
     cache.init_app(app)
     mail.init_app(app)
+    migrate.init_app(app, db)
 
     # Initialize admin panel
     from revmark.admin import init_admin
