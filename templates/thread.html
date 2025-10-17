@@ -88,7 +88,7 @@ function rejectOffer(messageId) {
     // Submit a POST request to reject the offer
     fetch('{{ url_for('main.reject_offer') }}', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}' },
+  headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message_id: messageId })
     }).then(() => { window.location.reload(); });
   }
