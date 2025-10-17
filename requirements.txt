@@ -12,3 +12,4 @@ stripe==8.5.0
 python-dotenv==1.0.0
 SQLAlchemy==2.0.23
 Flask-Mail==0.9.1
+Flask-Migrate==4.0.5

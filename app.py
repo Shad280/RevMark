@@ -56,7 +56,10 @@ except Exception as e:
 
     @fallback.route("/__status")
     def status():
-        return {"status": "fallback", "error": str(e)}, 200
+        import sys
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        error_message = str(exc_value) if exc_value else "Unknown error"
+        return {"status": "fallback", "error": error_message}, 200
 
     app = fallback
 
