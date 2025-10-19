@@ -37,22 +37,48 @@ def create_app():
     else:
         app.logger.info("🔍 SQLAlchemy will use: NOT_SET")
     
-    # Initialize extensions
-    db.init_app(app)
-    login_manager.init_app(app)
-    cache.init_app(app)
-    mail.init_app(app)
-    migrate.init_app(app, db)
+    # Initialize extensions (use defensive try/except so one failing optional
+    # integration doesn't completely crash the app at import time)
+    try:
+        db.init_app(app)
+    except Exception as e:
+        app.logger.exception(f"Failed to initialize SQLAlchemy: {e}")
 
-    # Initialize admin panel
-    from revmark.admin import init_admin
-    init_admin(app, db)
+    try:
+        login_manager.init_app(app)
+    except Exception as e:
+        app.logger.exception(f"Failed to initialize LoginManager: {e}")
 
-    # Import and register blueprints
-    from revmark import routes, models
-    from revmark.api_routes import api_bp
-    app.register_blueprint(routes.bp)
-    app.register_blueprint(api_bp)
+    try:
+        cache.init_app(app)
+    except Exception as e:
+        app.logger.exception(f"Failed to initialize Cache: {e}")
+
+    try:
+        mail.init_app(app)
+    except Exception as e:
+        app.logger.exception(f"Failed to initialize Mail: {e}")
+
+    try:
+        migrate.init_app(app, db)
+    except Exception as e:
+        app.logger.exception(f"Failed to initialize Migrate: {e}")
+
+    # Initialize admin panel (defensive)
+    try:
+        from revmark.admin import init_admin
+        init_admin(app, db)
+    except Exception as e:
+        app.logger.exception(f"Failed to initialize admin panel: {e}")
+
+    # Import and register blueprints (defensive)
+    try:
+        from revmark import routes, models
+        from revmark.api_routes import api_bp
+        app.register_blueprint(routes.bp)
+        app.register_blueprint(api_bp)
+    except Exception as e:
+        app.logger.exception(f"Failed to register blueprints: {e}")
 
     # Create tables only when appropriate
     # In production, tables should be created via migration or manual setup

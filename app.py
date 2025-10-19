@@ -42,6 +42,7 @@ try:
 
     from revmark import create_app
     app = create_app()
+    print("✅ create_app() completed successfully. App ready.")
 except Exception as e:
     # Print traceback to make debugging easier in Railway logs
     print("!!! create_app() failed during startup. Falling back to a minimal app.")
