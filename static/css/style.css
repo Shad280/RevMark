@@ -909,6 +909,18 @@ li a:hover {
   padding-top: 20px;
 }
 
+/* Footer legal links (Terms / Privacy) */
+.footer-legal-link {
+  color: #ffcc00; /* gold/yellow accent - change to your desired color */
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.footer-legal-link:hover {
+  color: #ffd54f;
+  text-decoration: none;
+}
+
 @media (max-width: 768px) {
   .site-footer {
     padding: 30px 15px 15px;
